@@ -3,16 +3,13 @@
 
 #########################
 
-# change 'tests => 1' to 'tests => last_test_to_print';
-
 use strict;
 use warnings;
+use Cwd;
 
-use Test::More tests => 1;
+use Test::More;
+
+# é possível usar o módulo
 BEGIN { use_ok('NameEntityRecognition') };
-
-#########################
-
-# Insert your test code below, the Test::More module is use()ed here so read
-# its man page ( perldoc Test::More ) for help writing this test script.
-
+# verificar se os métodos principais estão definidos
+can_ok('NameEntityRecognition', qw());

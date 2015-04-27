@@ -2,6 +2,14 @@ use 5.020001;
 use ExtUtils::MakeMaker;
 # See lib/ExtUtils/MakeMaker.pm for details of how to influence
 # the contents of the Makefile that is written.
+
+sub MY::postamble {
+  return <<'yey';
+application:
+	perl -I ./lib app/Application.pl
+yey
+}
+
 WriteMakefile(
     NAME              => 'NameEntityRecognition',
     VERSION_FROM      => 'lib/NameEntityRecognition.pm', # finds $VERSION, requires EU::MM from perl >= 5.5
