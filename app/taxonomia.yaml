@@ -57,7 +57,12 @@
    - teatro
 
 - geográfica:
-   - continente
+   - continente:
+      - Europa
+      - Ásia
+      - América
+      - Antártida
+      - Oceania
    - estado
    - ilha
    - lago
