@@ -3,6 +3,7 @@ package NameEntityRecognition;
 use 5.020001;
 use strict;
 use warnings;
+use utf8::all;
 
 require Exporter;
 
@@ -14,6 +15,25 @@ our $VERSION = '0.01';
 
 
 # Methods
+
+sub read_line {
+  my $file = shift;
+
+  open(my $in, "<", $file) or die "cannot open '$file': $!";
+
+  read_line($_) while(<$in>);
+
+  close($in);
+}
+
+sub read_word {
+  my $line = shift;
+
+  my @pals = split(/[^\w0-9()]+/, $line);
+  foreach my $p (@pals) {
+    # Fazer coisas
+  }
+}
 
 sub Create {
   my $cnt = 0;
