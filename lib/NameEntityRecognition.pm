@@ -21,7 +21,7 @@ sub read_line {
 
   open(my $in, "<", $file) or die "cannot open '$file': $!";
 
-  read_line($_) while(<$in>);
+  read_word($_) while(<$in>);
 
   close($in);
 }
