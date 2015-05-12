@@ -17,22 +17,25 @@ our $VERSION = '0.01';
 # Methods
 
 sub read_line {
-  my $file = shift;
+  my ($file, $fun) = @_;
 
   open(my $in, "<", $file) or die "cannot open '$file': $!";
 
-  read_word($_) while(<$in>);
+  my @results = ();
+
+  push(@results, &$fun(read_word($_))) while(<$in>);
 
   close($in);
+
+  \@results;
 }
 
 sub read_word {
   my $line = shift;
 
   my @pals = split(/[^\w0-9()]+/, $line);
-  foreach my $p (@pals) {
-    # Fazer coisas
-  }
+  
+  join ' ', @pals
 }
 
 sub Create {
