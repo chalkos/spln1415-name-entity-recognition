@@ -17,9 +17,14 @@ our $VERSION = '0.01';
 # Methods
 
 sub read_line {
-  my ($file, $fun) = @_;
+  my ($fun, $file) = @_;
 
-  open(my $in, "<", $file) or die "cannot open '$file': $!";
+  my $in;
+  if($file){
+    open($in, "<", $file) or die "cannot open '$file': $!";
+  }else{
+    $in = STDIN;
+  }
 
   my @results = ();
 
