@@ -16,7 +16,7 @@ our $VERSION = '0.01';
 
 # Methods
 
-sub read_line {
+sub map_lines {
   my ($fun, $file) = @_;
 
   my $in;
@@ -28,19 +28,14 @@ sub read_line {
 
   my @results = ();
 
-  push(@results, &$fun(read_word($_))) while(<$in>);
+  while(my $line = <$in>){
+    $normalized_line = join ' ' (split(/[^\w0-9()]+/, $line))
+    push(@results, &$fun(read_word($normalized_line)))
+  }
 
-  close($in);
+  close($in) if($file);
 
   \@results;
-}
-
-sub read_word {
-  my $line = shift;
-
-  my @pals = split(/[^\w0-9()]+/, $line);
-  
-  join ' ', @pals
 }
 
 sub Create {
