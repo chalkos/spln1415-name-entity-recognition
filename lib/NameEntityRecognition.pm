@@ -28,17 +28,19 @@ sub map_lines {
   my $in;
   my @results = ();
 
+  my $normalized_line;
+
   if($type eq 'file'){
     open($in, "<", $value) or die "cannot open '$value': $!";
     while(my $line = <$in>){
-      $normalized_line = join ' ' (split(/[^\w0-9()]+/, $line))
-      push(@results, &$fun(read_word($normalized_line)))
+      $normalized_line = join ' ', (split(/[^\w0-9()]+/, $line));
+      push(@results, &$fun($normalized_line));
     }
     close($in);
   }else{
     for my $line (split /^/, $value) {
-      $normalized_line = join ' ' (split(/[^\w0-9()]+/, $line))
-      push(@results, &$fun(read_word($normalized_line)))
+      $normalized_line = join ' ', (split(/[^\w0-9()]+/, $line));
+      push(@results, &$fun($normalized_line));
     }
   }
 
@@ -52,14 +54,15 @@ sub Create {
     die "First parameter must be 'file' or 'text'.";
   }
 
-  &example = sub {
+  my $example = sub {
     my $line = shift;
     "example: $line"
-  }
+  };
 
   sub {
     my $value = shift;
-    return map_lines(\&example, $type, $value);
+    my $t = $type;
+    return map_lines($example, $t, $value);
   }
 }
 

@@ -25,4 +25,6 @@ sub reconhecer {
 }
 
 
-is( reconhecer({}, {}, "nada de especial"), {}, "passando o texto directamente" );
+is_deeply( reconhecer({}, {}, "nada de especial"), ['example: nada de especial'], "passando o texto directamente" );
+
+done_testing();
