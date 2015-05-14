@@ -16,31 +16,53 @@ our $VERSION = '0.01';
 
 # Methods
 
-sub read_line {
-  my $file = shift;
+# takes a function, a type (file or text) and a filename or text string.
+# normalizes each line of the input and maps function to each normalized line
+sub map_lines {
+  my ($fun, $type, $value) = @_;
 
-  open(my $in, "<", $file) or die "cannot open '$file': $!";
-
-  read_word($_) while(<$in>);
-
-  close($in);
-}
-
-sub read_word {
-  my $line = shift;
-
-  my @pals = split(/[^\w0-9()]+/, $line);
-  foreach my $p (@pals) {
-    # Fazer coisas
+  if( !($type eq 'file') && !($type eq 'text') ){
+    die "Second parameter must be 'file' or 'text'.";
   }
+
+  my $in;
+  my @results = ();
+
+  my $normalized_line;
+
+  if($type eq 'file'){
+    open($in, "<", $value) or die "cannot open '$value': $!";
+    while(my $line = <$in>){
+      $normalized_line = join ' ', (split(/[^\w0-9()]+/, $line));
+      push(@results, &$fun($normalized_line));
+    }
+    close($in);
+  }else{
+    for my $line (split /^/, $value) {
+      $normalized_line = join ' ', (split(/[^\w0-9()]+/, $line));
+      push(@results, &$fun($normalized_line));
+    }
+  }
+
+  \@results;
 }
 
 sub Create {
-  my $cnt = 0;
+  my ($type, $names, $taxonomy) = @_;
 
+  if( !($type eq 'file') && !($type eq 'text') ){
+    die "First parameter must be 'file' or 'text'.";
+  }
+
+  my $example = sub {
+    my $line = shift;
+    "example: $line"
+  };
 
   sub {
-    $cnt++;
+    my $value = shift;
+    my $t = $type;
+    return map_lines($example, $t, $value);
   }
 }
 

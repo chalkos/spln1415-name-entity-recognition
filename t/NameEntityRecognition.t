@@ -17,20 +17,14 @@ BEGIN { use_ok('NameEntityRecognition') };
 #########################
 
 sub reconhecer {
-  my ($nomes, $taxonomia, $frase, $use_stdin) = @_;
+  my ($nomes, $taxonomia, $frase) = @_;
 
-  my $fun = NameEntityRecognition::Create($nomes, $taxonomia);
+  my $fun = NameEntityRecognition::Create('text', $nomes, $taxonomia);
 
-  if ($use_stdin) {
-    open my $stdin, '<', \ "$frase\n"
-      or die "Cannot open STDIN to read from string: $!";
-    local *STDIN = $stdin;
-    &$fun();
-  } else {
-    &$fun($frase);
-  }
+  &$fun($frase);
 }
 
 
-is( reconhecer({}, {}, "nada de especial"), {}, "passando o texto directamente" );
-is( reconhecer({}, {}, "nada de especial", 1), {}, "passando o texto por STDIN" );
+is_deeply( reconhecer({}, {}, "nada de especial"), ['example: nada de especial'], "passando o texto directamente" );
+
+done_testing();
