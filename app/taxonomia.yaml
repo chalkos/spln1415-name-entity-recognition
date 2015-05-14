@@ -1,110 +1,109 @@
 --- #YAML:1.0
 
-- pessoa:
-   - advogado
-   - arquitecto
-   - atleta:
-      - futebolista
-   - escritor:
-      - poeta
-   - jornalista
-   - militar:
-      - general
-      - almirante
-      - brigadeiro
-      - sargento
-      - tenente
-      - capitão
-   - músico:
-      - compositor
-      - pianista
-   - político:
-      - presidente da república
-      - deputado
-      - rei:
-         - rei de portugal
-   - religioso:
-      - cardeal
-      - clérigo
-      - papa
-      - padre
-      - bispo
-      - santo
+pessoa:
+   advogado: 1
+   arquitecto: 1
+   atleta:
+      futebolista: 1
+   escritor:
+      poeta: 1
+   jornalista: 1
+   militar:
+      general: 1
+      almirante: 1
+      brigadeiro: 1
+      sargento: 1
+      tenente: 1
+      capitão: 1
+   músico:
+      compositor: 1
+      pianista: 1
+   político:
+      presidente da república: 1
+      deputado: 1
+      rei:
+         rei de portugal: 1
+   religioso:
+      cardeal: 1
+      clérigo: 1
+      papa: 1
+      padre: 1
+      bispo: 1
+      santo: 1
 
-- organização:
-   - organização história:
-      - dinastia
-      - cortes
-   - pessoa colectiva
-   - agrupamento musical
-   - clube desportivo:
-      - clube de futebol
-   - empresa:
-      - banco
-   - jornal
-   - hospital
-   - instituição:
-      - instituição religiosa
-      - instituição de solidariedade
-      - instituição académica
-      - instituição cultural
-      - instituição administrativa:
-         - câmara municipal
-         - governo
-      - instituição política:
-         - partido político
-      - tribunal
-   - teatro
+organização:
+   organização história:
+      dinastia: 1
+      cortes: 1
+   pessoa colectiva: 1
+   agrupamento musical: 1
+   clube desportivo:
+      clube de futebol: 1
+   empresa:
+      banco: 1
+   jornal: 1
+   hospital: 1
+   instituição:
+      instituição religiosa: 1
+      instituição de solidariedade: 1
+      instituição académica: 1
+      instituição cultural: 1
+      instituição administrativa:
+         câmara municipal: 1
+         governo: 1
+      instituição política:
+         partido político: 1
+      tribunal: 1
+   teatro: 1
 
-- geográfica:
-   - continente:
-      - Europa
-      - Ásia
-      - América
-      - Antártida
-      - Oceania
-   - estado
-   - ilha
-   - lago
-   - mar
-   - monumento:
-      - convento
-      - mosteiro
-      - igreja
-   - oceano
-   - pais:
-      - reino
-      - rebública
-      - principado
-      - antigo pais
-   - paróquia
-   - localidade
-   - povoado:
-      - aldeia
-      - cidade:
-         - sede de distrito
-      - concelho
-      - distrito
-      - freguesia
-      - lugar
-      - sede de concelho
-      - vila
-   - província
-   - região
-   - ribeira
-   - rio
-   - serra
+geográfica:
+   continente:
+      Europa: 1
+      Ásia: 1
+      América: 1
+      Antártida: 1
+      Oceania: 1
+   estado: 1
+   ilha: 1
+   lago: 1
+   mar: 1
+   monumento:
+      convento: 1
+      mosteiro: 1
+      igreja: 1
+   oceano: 1
+   pais:
+      reino: 1
+      rebública: 1
+      principado: 1
+      antigo pais: 1
+   paróquia: 1
+   localidade: 1
+   povoado:
+      aldeia: 1
+      cidade:
+         sede de distrito: 1
+      concelho: 1
+      distrito: 1
+      freguesia: 1
+      lugar: 1
+      sede de concelho: 1
+      vila: 1
+   província: 1
+   região: 1
+   ribeira: 1
+   rio: 1
+   serra: 1
 
-- evento:
-   - encontro
-   - evento histórico:
-       - guerra
-       - batalha
-       - invasão
-       - conquista
+evento:
+   encontro: 1
+   evento histórico:
+      guerra: 1
+      batalha: 1
+      invasão: 1
+      conquista: 1
 
-- artefacto:
-   - documento
-
-- outro:
-   - signo
+artefacto:
+   documento: 1
+outro:
+   signo: 1

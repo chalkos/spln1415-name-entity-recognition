@@ -1,5 +1,6 @@
 use strict;
 use Data::Dumper;
+use utf8::all;
 use NameEntityRecognition;
 
 use YAML ('LoadFile');
@@ -7,9 +8,10 @@ use YAML ('LoadFile');
 sub readYAML {
   my $filename = shift;
 
-  my $cena = LoadFile($filename);
-  print Dumper($cena);
+  return LoadFile($filename);
 }
 
+my $nomes = readYAML('app/nomes.yaml');
+my $taxonomias = readYAML('app/taxonomia.yaml');
 
-readYAML('app/taxonomia.yaml');
+print Dumper $taxonomias;
