@@ -54,16 +54,16 @@ sub Create {
     die "First parameter must be 'file' or 'text'.";
   }
 
-  my $example = sub {
-    my $line = shift;
-    "example: $line"
-  };
-
   sub {
     my $value = shift;
     my $t = $type;
-    return map_lines($example, $t, $value);
+    return map_lines(\&Recognize, $t, $value);
   }
+}
+
+sub Recognize {
+  my $line = shift;
+  "example: $line"
 }
 
 1;
