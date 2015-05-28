@@ -18,7 +18,7 @@ our $VERSION = '0.01';
 
 # takes a function, a type (file or text) and a filename or text string.
 # normalizes each line of the input and maps function to each normalized line
-sub map_lines {
+sub map_lines($$$) {
   my ($fun, $type, $value) = @_;
 
   if( !($type eq 'file') && !($type eq 'text') ){
@@ -47,7 +47,7 @@ sub map_lines {
   \@results;
 }
 
-sub Create {
+sub CreateRecognizer($$$) {
   my ($type, $names, $taxonomy) = @_;
 
   if( !($type eq 'file') && !($type eq 'text') ){
@@ -61,7 +61,7 @@ sub Create {
   }
 }
 
-sub Recognize {
+sub Recognize($) {
   my $line = shift;
   "example: $line"
 }

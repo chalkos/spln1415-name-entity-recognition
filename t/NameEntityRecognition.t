@@ -19,7 +19,7 @@ BEGIN { use_ok('NameEntityRecognition') };
 sub reconhecer {
   my ($nomes, $taxonomia, $frase) = @_;
 
-  my $fun = NameEntityRecognition::Create('text', $nomes, $taxonomia);
+  my $fun = NameEntityRecognition::CreateRecognizer('text', $nomes, $taxonomia);
 
   &$fun($frase);
 }
