@@ -5,6 +5,8 @@ use strict;
 use warnings;
 use utf8::all;
 
+use Data::Dumper;
+
 require Exporter;
 
 our @ISA = qw(Exporter);
@@ -54,7 +56,7 @@ sub CreateRecognizer($$$) {
     die "First parameter must be 'file' or 'text'.";
   }
 
-  sub {
+  sub($) {
     my $value = shift;
     my $t = $type;
     return map_lines(\&Recognize, $t, $value);
@@ -62,8 +64,27 @@ sub CreateRecognizer($$$) {
 }
 
 sub Recognize($) {
+  #use re 'debugcolor';
   my $line = shift;
-  "example: $line"
+
+  my $exp = {
+    # words that can be inside names
+    'partOfName' => '(da|de|do|das|dos|Da|De|Do|Das|Dos)',
+    # capital word
+    'word' => '\p{Uppercase_Letter}\p{Lowercase_Letter}*'
+  };
+
+  my $h = {}; # contains everything we find
+
+  $h->{_line} = $line;
+
+  # try to find names
+  while( $line =~ /$exp->{word}(\s($exp->{partOfName}\s)?$exp->{word})*/g ){
+    $h->{$&}{is_a} = 'name' if $&;
+  }
+
+  #no re 'debugcolor';
+  return $h;
 }
 
 1;

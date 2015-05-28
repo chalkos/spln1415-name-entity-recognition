@@ -6,6 +6,7 @@
 use strict;
 use warnings;
 use Cwd;
+use utf8::all;
 
 use Test::More;
 
@@ -24,7 +25,20 @@ sub reconhecer {
   &$fun($frase);
 }
 
+sub reconhecer_um {
+  shift @{reconhecer(@_)};
+}
 
-is_deeply( reconhecer({}, {}, "nada de especial"), ['example: nada de especial'], "passando o texto directamente" );
+
+is_deeply( reconhecer_um({}, {}, "nada de especial"), {_line =>'nada de especial'}, "passando o texto directamente" );
+
+is_deeply( reconhecer_um({}, {}, "o livro \"Uma Página em Branco\", da autoria de José Alberto da Silva dos Santos, vendeu"),
+  {
+    _line => 'o livro Uma Página em Branco da autoria de José Alberto da Silva dos Santos vendeu',
+    'José Alberto da Silva dos Santos' => {is_a => 'name'},
+    'Uma Página' => {is_a => 'name'},
+    'Branco' => {is_a => 'name'},
+
+  }, "detecta entidade pela capitalização" );
 
 done_testing();
