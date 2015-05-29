@@ -11,61 +11,61 @@ require Exporter;
 
 our @ISA = qw(Exporter);
 
-our @EXPORT_OK = qw( Create );
+our @EXPORT_OK = qw( Normalize_line );
 
 our $VERSION = '0.01';
 
+####################################
+# Object methods
 
-# Methods
+sub new{
+  my ($class, $names, $taxonomy) = @_;
+  my $self = bless {
+    'names' => $names,
+    'taxonomy' => $taxonomy,
+    'entities' => {}, #recognized entities
+    }, $class;
 
-# takes a function, a type (file or text) and a filename or text string.
-# normalizes each line of the input and maps function to each normalized line
-sub map_lines($$$) {
-  my ($fun, $type, $value) = @_;
-
-  if( !($type eq 'file') && !($type eq 'text') ){
-    die "Second parameter must be 'file' or 'text'.";
-  }
-
-  my $in;
-  my @results = ();
-
-  my $normalized_line;
-
-  if($type eq 'file'){
-    open($in, "<", $value) or die "cannot open '$value': $!";
-    while(my $line = <$in>){
-      $normalized_line = join ' ', (split(/[^\w0-9()]+/, $line));
-      push(@results, &$fun($normalized_line));
-    }
-    close($in);
-  }else{
-    for my $line (split /^/, $value) {
-      $normalized_line = join ' ', (split(/[^\w0-9()]+/, $line));
-      push(@results, &$fun($normalized_line));
-    }
-  }
-
-  \@results;
+  return $self;
 }
 
-sub CreateRecognizer($$$) {
-  my ($type, $names, $taxonomy) = @_;
+# opens a file and reads lines from it
+sub recognize_file{
+  my ($self, $fn) = @_;
 
-  if( !($type eq 'file') && !($type eq 'text') ){
-    die "First parameter must be 'file' or 'text'.";
-  }
+  open(my $fh, "<", $fn) or die "cannot open '$fn': $!";
+  $self->recognize_file_handle($fh);
+  close($fh);
 
-  sub($) {
-    my $value = shift;
-    my $t = $type;
-    return map_lines(\&Recognize, $t, $value);
-  }
+  return 1;
 }
 
-sub Recognize($) {
+# reads lines from a provided file handle
+sub recognize_file_handle{
+  my ($self, $fh) = @_;
+  while(my $line = <$fh>){
+    $self->recognize_line($line);
+  }
+  return 1;
+}
+
+# reads lines from a string
+sub recognize_string{
+  my ($self, $str) = @_;
+  for my $line (split /^/, $str){
+    $self->recognize_line($line);
+  }
+  return 1;
+}
+
+# extracts entities from a line
+sub recognize_line{
+  my $self = shift;
+  my $line = Normalize_line(shift);
+  my $results = {}; # results for this line
+
+  # start debugging regular expressions
   #use re 'debugcolor';
-  my $line = shift;
 
   my $exp = {
     # words that can be inside names
@@ -74,17 +74,44 @@ sub Recognize($) {
     'word' => '\p{Uppercase_Letter}\p{Lowercase_Letter}*'
   };
 
-  my $h = {}; # contains everything we find
-
-  $h->{_line} = $line;
-
   # try to find names
   while( $line =~ /$exp->{word}(\s($exp->{partOfName}\s)?$exp->{word})*/g ){
-    $h->{$&}{is_a} = 'name' if $&;
+    $results->{$&}{is_a} = 'name' if $&;
   }
 
+  # stop debugging regular expressions
   #no re 'debugcolor';
-  return $h;
+
+  $self->add_to_entities($results);
+  return 1;
+}
+
+# merges new entities with the existing entities
+sub add_to_entities{
+  my ($self, $results) = @_;
+
+  foreach my $key (keys %$results) {
+    if( defined $self->{entities}{$key} ){
+      # TODO: handle collisions
+      print STDERR "$key exists in result, overwriting."
+    }else{
+      $self->{entities}{$key} = $results->{$key};
+    }
+  }
+}
+
+# gets existing entities
+sub entities{
+  my $self = shift;
+  return $self->{entities};
+}
+
+####################################
+# Class methods
+
+# removes unuseful parts of a line
+sub Normalize_line {
+  join ' ', (split(/[^\w0-9()]+/, shift));
 }
 
 1;

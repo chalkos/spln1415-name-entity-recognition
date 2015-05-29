@@ -13,32 +13,39 @@ use Test::More;
 # é possível usar o módulo
 BEGIN { use_ok('NameEntityRecognition') };
 # verificar se os métodos principais estão definidos
-#can_ok('NameEntityRecognition', qw(Create));
+can_ok('NameEntityRecognition',
+  qw(
+    new
+    recognize_file
+    recognize_file_handle
+    recognize_string
+    recognize_line
+    add_to_entities
+    entities
+  ));
+
+isa_ok( NameEntityRecognition->new, 'NameEntityRecognition' );
 
 #########################
 
-sub reconhecer {
-  my ($nomes, $taxonomia, $frase) = @_;
+#recognize string
+sub rstr {
+  my ($nomes, $taxonomia, $texto) = @_;
 
-  my $fun = NameEntityRecognition::CreateRecognizer('text', $nomes, $taxonomia);
+  my $recognizer = NameEntityRecognition->new($nomes, $taxonomia);
+  $recognizer->recognize_string($texto);
 
-  &$fun($frase);
+  return $recognizer->entities;
 }
 
-sub reconhecer_um {
-  shift @{reconhecer(@_)};
-}
 
+is_deeply( rstr({}, {}, "nada de especial"), {}, "linha sem entidades" );
 
-is_deeply( reconhecer_um({}, {}, "nada de especial"), {_line =>'nada de especial'}, "passando o texto directamente" );
-
-is_deeply( reconhecer_um({}, {}, "o livro \"Uma Página em Branco\", da autoria de José Alberto da Silva dos Santos, vendeu"),
+is_deeply( rstr({}, {}, "o livro \"Uma Página em Branco\", da autoria de José Alberto da Silva dos Santos, vendeu"),
   {
-    _line => 'o livro Uma Página em Branco da autoria de José Alberto da Silva dos Santos vendeu',
     'José Alberto da Silva dos Santos' => {is_a => 'name'},
     'Uma Página' => {is_a => 'name'},
     'Branco' => {is_a => 'name'},
-
   }, "detecta entidade pela capitalização" );
 
 done_testing();
