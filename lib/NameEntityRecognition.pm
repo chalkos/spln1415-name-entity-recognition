@@ -5,6 +5,8 @@ use strict;
 use warnings;
 use utf8::all;
 
+use Lingua::Jspell;
+
 use Data::Dumper;
 
 require Exporter;
@@ -21,6 +23,7 @@ our $VERSION = '0.01';
 sub new{
   my ($class, $names, $taxonomy) = @_;
   my $self = bless {
+    'dict' => Lingua::Jspell->new("port"),
     'names' => $names,
     'taxonomy' => $taxonomy,
     'entities' => {}, #recognized entities
