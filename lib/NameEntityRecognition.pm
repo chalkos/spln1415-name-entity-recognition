@@ -114,7 +114,13 @@ sub entities{
 
 # removes unuseful parts of a line
 sub Normalize_line {
-  join ' ', (split(/[^\w0-9()]+/, shift));
+  my $line = shift;
+
+  $line =~ s/\{\}//g;
+  $line =~ s/\s+/ /g;
+  #join ' ', (split(/[^\w0-9()]+/, shift));
+
+  return $line;
 }
 
 1;
