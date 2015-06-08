@@ -6,6 +6,7 @@ use warnings;
 use utf8::all;
 
 use Lingua::Jspell;
+use Text::RewriteRules;
 
 use Data::Dumper;
 
@@ -18,15 +19,112 @@ our @EXPORT_OK = qw( Normalize_line );
 our $VERSION = '0.01';
 
 ####################################
+# Rewrite rules (uses heredoc so syntax
+# highlight continues to work for 'normal' perl code)
+my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
+{no warnings 'redefine';
+################################################
+################################################
+RULES/m people
+# ignorar pessoas já encontradas
+({person:(\p{Lu}\p{Ll}*(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}*)*)})=e=>$1
+(\p{Lu}\p{Ll}*(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}*)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
+ENDRULES
+
+RULES post_people
+{person:(.*?)}\s(e)\s{person:(.*?)}=e=>"{person:$1$2$3}"!! $self->post_person($1,$3)
+ENDRULES
+################################################
+################################################
+}
+REWRITE_RULES_BLOCK
+
+####################################
+# Methods used by rewrite rules
+
+sub is_a_person{
+  my ($self, $str) = @_;
+
+  my $str_original = $str;
+
+  # remover partes dispensáveis
+  $str =~ s/(da|de|do|das|dos|Da|De|Do|Das|Dos)\s//g;
+
+  my $nomes_sim    = 0;
+  my $nomes_talvez = 0;
+  my $nomes_nao    = 0;
+
+  debug("\n=====start IS_A_PERSON=====\n");
+  foreach my $n (split /\s/,$str) {
+    debug("palavra: $n -> ");
+
+    # ver na hash dos nomes
+    if( defined( my $tipo = ($self->{names}->{$n} || $self->{names}->{lc($n)}) ) ){
+      debug("um nome $tipo\n");
+      $nomes_sim++;
+      next;
+    }
+
+    # ver na análise morfológica
+    my @fea = $self->{dict}->fea($n);
+
+    my $nao_nomes_proprios = 0;
+    my $nomes_proprios = 0;
+    foreach my $analise ( @fea ) {
+      if($analise->{CAT} =~ /np/){
+        $nomes_proprios++;
+      }else{
+        $nao_nomes_proprios++;
+      }
+    }
+
+    if($nomes_proprios > 0){
+      $nomes_sim++;
+      debug("nome próprio (morf)\n");
+    }elsif($nao_nomes_proprios > 0){
+      $nomes_nao++;
+      debug("não é nome proprio (morf)\n");
+    }else{
+      $nomes_talvez++;
+      debug("não sei o que é isto (morf)\n");
+    }
+
+    if( $nomes_sim == 0 && $nomes_talvez == 0 && $nomes_nao > 0 ){
+      # se a primeira palavra que se detectou não corresponde a um nome, abortar
+      debug("=====IS_A_PERSON? NO=====\n");
+      return 0;
+    }
+  }
+  debug("=====IS_A_PERSON? YES=====\n");
+
+  #TODO: alguma heuristica que use a quantidade de nomes_sim, nomes_talvez e nomes_nao 
+  #      para ajudar a deterinar se é mesmo um nome de pessoa ou não.
+
+  $self->add_entity({
+    $str_original => {
+      is_a => 'person'
+      },
+    });
+
+  return 1;
+}
+
+sub post_person {
+  my ($self, $fst, $snd) = @_;
+  0
+}
+
+####################################
 # Object methods
 
 sub new{
-  my ($class, $names, $taxonomy) = @_;
+  my ($class, $names, $taxonomy, $re_write) = @_;
   my $self = bless {
     'dict' => Lingua::Jspell->new("port"),
     'names' => $names,
     'taxonomy' => $taxonomy,
     'entities' => {}, #recognized entities
+    'rewrite_rules' => ($re_write ? $re_write : $rewrite_rules),
     }, $class;
 
   return $self;
@@ -65,48 +163,58 @@ sub recognize_string{
 sub recognize_line{
   my $self = shift;
   my $line = Normalize_line(shift);
-  my $results = {}; # results for this line
 
-  # start debugging regular expressions
-  #use re 'debugcolor';
+  eval $self->{rewrite_rules};
+  print STDERR $@ if ($@);
 
-  my $exp = {
-    # words that can be inside names
-    'partOfName' => '(da|de|do|das|dos|Da|De|Do|Das|Dos)',
-    # capital word
-    'word' => '\p{Uppercase_Letter}\p{Lowercase_Letter}*'
-  };
+  $line = people($line);
 
-  # try to find names
-  while( $line =~ /$exp->{word}(\s($exp->{partOfName}\s)?$exp->{word})*/g ){
-    $results->{$&}{is_a} = 'name' if $&;
-  }
-
-  # stop debugging regular expressions
-  #no re 'debugcolor';
-
-  $self->add_to_entities($results);
+  $self->review_entities();
   return 1;
 }
 
-# merges new entities with the existing entities
-sub add_to_entities{
-  my ($self, $results) = @_;
+sub add_entity {
+  my ($self, $entity) = @_;
 
-  foreach my $key (keys %$results) {
-    if( defined $self->{entities}{$key} ){
-      # TODO: handle collisions
-      print STDERR "$key exists in result, overwriting."
+  foreach my $key (keys %$entity) {
+    if( defined($self->{entities}{$key}) ){
+      my $existing = $self->{entities}{$key};
+      push @$existing, $entity->{$key};
     }else{
-      $self->{entities}{$key} = $results->{$key};
+      $self->{entities}{$key} = [$entity->{$key}];
     }
   }
 }
 
+# tidy up after recognizing a line
+sub review_entities{
+  my ($self) = @_;
+
+  #TODO
+  # ajustar nomes, por exemplo:
+  # explicitar que as pessoas 'João Miguel Rodrigues', 'Miguel Rodrigues' e 'Rodrigues'
+  # são a mesma pessoa e juntar as informações que possam estar divididas pelas 3 entidades
+}
+
 # gets existing entities
+# if the entity has an array with only one element, use that element
+# otherwise use the array as is.
 sub entities{
   my $self = shift;
-  return $self->{entities};
+
+  my $ent = {};
+
+  foreach my $key (keys %{$self->{entities}}) {
+    my $val = $self->{entities}{$key};
+
+    if( @$val == 1 ){
+      $ent->{$key} = $val->[0];
+    }else{
+      $ent->{$key} = $val;
+    }
+  }
+
+  return $ent;
 }
 
 ####################################
@@ -121,6 +229,11 @@ sub Normalize_line {
   #join ' ', (split(/[^\w0-9()]+/, shift));
 
   return $line;
+}
+
+sub debug {
+  my $str = shift;
+  print STDERR $str;
 }
 
 1;

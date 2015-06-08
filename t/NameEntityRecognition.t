@@ -20,7 +20,8 @@ can_ok('NameEntityRecognition',
     recognize_file_handle
     recognize_string
     recognize_line
-    add_to_entities
+    add_entity
+    review_entities
     entities
   ));
 
@@ -41,11 +42,16 @@ sub rstr {
 
 is_deeply( rstr({}, {}, "nada de especial"), {}, "linha sem entidades" );
 
-is_deeply( rstr({}, {}, "o livro \"Uma Página em Branco\", da autoria de José Alberto da Silva dos Santos, vendeu"),
+is_deeply( rstr({}, {},
+  "o livro \"Uma Página em Branco\", da autoria de José Alberto Branco da Silva Santos, vendeu"),
   {
-    'José Alberto da Silva dos Santos' => {is_a => 'name'},
-    'Uma Página' => {is_a => 'name'},
-    'Branco' => {is_a => 'name'},
-  }, "detecta entidade pela capitalização" );
+    'José Alberto Branco da Silva Santos' => {is_a => 'person'},
+  }, "detecta nome de pessoa" );
+
+is_deeply( rstr({}, {},
+  "o empresário Hugo Valentim da Silva e Cunha anunciou"),
+  {
+    'Hugo Valentim da Silva e Cunha' => {is_a => 'person'},
+  }, "detecta nome de pessoa" );
 
 done_testing();
