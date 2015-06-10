@@ -86,12 +86,12 @@ sub is_an_entity{
 
     if( $nomes_sim == 0 && $nomes_talvez == 0 && $nomes_nao > 0 ){
       # se a primeira palavra que se detectou não corresponde a um nome, abortar
-      debug("=====IS_AN_ENTITY? NO=====\n");
+      debug("\n=====IS_AN_ENTITY? NO=====\n");
       return 0;
     }
   }
 
-  debug("\n=====start IS_AN_ENTITY? YES=====\n");
+  debug("\n=====IS_AN_ENTITY? YES=====\n");
 
   return 1;
 }
