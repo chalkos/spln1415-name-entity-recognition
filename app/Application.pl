@@ -2,11 +2,9 @@ use strict;
 use Data::Dumper;
 use utf8::all;
 use NameEntityRecognition;
-
-use YAML ('LoadFile');
-
 use Lingua::Jspell;
 
+use YAML ('LoadFile');
 
 sub readYAML {
   my $filename = shift;
@@ -16,15 +14,20 @@ sub readYAML {
 
 my $nomes = readYAML('app/nomes.yaml');
 my $taxonomias = readYAML('app/taxonomia.yaml');
+my $noticia = 'app/noticia.txt';
 
-print Dumper $taxonomias;
+my $recognizer = NameEntityRecognition->new($nomes,$taxonomias);
+
+$recognizer->recognize_file($noticia);
+
+print Dumper $recognizer->entities;
 
 
-print "########\n";
+# print "########\n";
 
-my $dict = Lingua::Jspell->new( "port");
+# my $dict = Lingua::Jspell->new( "port");
 
-print "--- rad:\n" . Dumper($dict->rad("gatinho"));
-print "--- fea:\n" . Dumper($dict->fea("gatinho"));
-print "--- der:\n" . Dumper($dict->der("gato"));
-print "--- flags:\n" . Dumper($dict->flags("gato"));
+# print "--- rad:\n" . Dumper($dict->rad("gatinho"));
+# print "--- fea:\n" . Dumper($dict->fea("gatinho"));
+# print "--- der:\n" . Dumper($dict->der("gato"));
+# print "--- flags:\n" . Dumper($dict->flags("gato"));
