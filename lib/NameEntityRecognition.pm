@@ -91,7 +91,7 @@ sub is_an_entity{
     }
   }
 
-  debug("\n=====start IS_AN_ENTITY? YES=====\n")
+  debug("\n=====start IS_AN_ENTITY? YES=====\n");
 
   return 1;
 }
