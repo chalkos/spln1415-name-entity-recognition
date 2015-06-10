@@ -27,7 +27,7 @@ my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 ################################################
 RULES/m people
 ({.*?:.*?})=e=>$1
-(\p{Lu}\p{Ll}*(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}*)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
+(\p{Lu}\p{Ll}+(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}+)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
 ENDRULES
 
 RULES post_people
