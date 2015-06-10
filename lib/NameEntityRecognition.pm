@@ -63,20 +63,20 @@ sub is_an_entity{
     # ver na análise morfológica
     my @fea = $self->{dict}->fea($n);
 
-    my $nao_nomes_comuns = 0;
-    my $nomes_comuns = 0;
+    my $palavras_invalidas = 0;
+    my $palavras_validas = 0;
     foreach my $analise ( @fea ) {
-      if($analise->{CAT} =~ /nc/){
-        $nomes_comuns++;
+      if($analise->{CAT} =~ /nc|np/){
+        $palavras_validas++;
       }else{
-        $nao_nomes_comuns++;
+        $palavras_invalidas++;
       }
     }
 
-    if($nomes_comuns > 0){
+    if($palavras_validas > 0){
       $nomes_sim++;
       debug("nome comum (morf)\n");
-    }elsif($nao_nomes_comuns > 0){
+    }elsif($palavras_invalidas > 0){
       $nomes_nao++;
       debug("não é nome comum (morf)\n");
     }else{
@@ -122,20 +122,20 @@ sub is_a_person{
     # ver na análise morfológica
     my @fea = $self->{dict}->fea($n);
 
-    my $nao_nomes_proprios = 0;
-    my $nomes_proprios = 0;
+    my $palavras_invalidas = 0;
+    my $palavras_validas = 0;
     foreach my $analise ( @fea ) {
       if($analise->{CAT} =~ /np/){
-        $nomes_proprios++;
+        $palavras_validas++;
       }else{
-        $nao_nomes_proprios++;
+        $palavras_invalidas++;
       }
     }
 
-    if($nomes_proprios > 0){
+    if($palavras_validas > 0){
       $nomes_sim++;
       debug("nome próprio (morf)\n");
-    }elsif($nao_nomes_proprios > 0){
+    }elsif($palavras_invalidas > 0){
       $nomes_nao++;
       debug("não é nome proprio (morf)\n");
     }else{
