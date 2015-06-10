@@ -26,8 +26,7 @@ my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 ################################################
 ################################################
 RULES/m people
-# ignorar pessoas já encontradas
-({person:(\p{Lu}\p{Ll}*(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}*)*)})=e=>$1
+({.*?:.*?})=e=>$1
 (\p{Lu}\p{Ll}*(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}*)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
 ENDRULES
 
@@ -36,11 +35,66 @@ RULES post_people
 ENDRULES
 ################################################
 ################################################
+
+RULES/m entity
+({.*?:.*?})=e=>$1
+(\p{Lu}\p{Ll}(\s\p{Lu}\p{Ll})*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
+ENDRULES
+################################################
+################################################
 }
 REWRITE_RULES_BLOCK
 
 ####################################
 # Methods used by rewrite rules
+
+sub is_an_entity{
+  my ($self, $str) = @_;
+
+  debug("\n=====start IS_AN_ENTITY=====\n");
+
+  my $nomes_sim    = 0;
+  my $nomes_talvez = 0;
+  my $nomes_nao    = 0;
+
+  foreach my $n (split /\s/,$str) {
+    debug("palavra: $n -> ");
+
+    # ver na análise morfológica
+    my @fea = $self->{dict}->fea($n);
+
+    my $nao_nomes_comuns = 0;
+    my $nomes_comuns = 0;
+    foreach my $analise ( @fea ) {
+      if($analise->{CAT} =~ /nc/){
+        $nomes_comuns++;
+      }else{
+        $nao_nomes_comuns++;
+      }
+    }
+
+    if($nomes_comuns > 0){
+      $nomes_sim++;
+      debug("nome comum (morf)\n");
+    }elsif($nao_nomes_comuns > 0){
+      $nomes_nao++;
+      debug("não é nome comum (morf)\n");
+    }else{
+      $nomes_talvez++;
+      debug("não sei o que é isto (morf)\n");
+    }
+
+    if( $nomes_sim == 0 && $nomes_talvez == 0 && $nomes_nao > 0 ){
+      # se a primeira palavra que se detectou não corresponde a um nome, abortar
+      debug("=====IS_AN_ENTITY? NO=====\n");
+      return 0;
+    }
+  }
+
+  debug("\n=====start IS_AN_ENTITY? YES=====\n")
+
+  return 1;
+}
 
 sub is_a_person{
   my ($self, $str) = @_;
