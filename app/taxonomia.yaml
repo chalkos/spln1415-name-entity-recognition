@@ -58,11 +58,11 @@ organização:
 
 geográfica:
    continente:
-      Europa: 1
-      Ásia: 1
-      América: 1
-      Antártida: 1
-      Oceania: 1
+      europa: 1
+      ásia: 1
+      américa: 1
+      antártida: 1
+      oceania: 1
    estado: 1
    ilha: 1
    lago: 1
@@ -103,7 +103,23 @@ evento:
       invasão: 1
       conquista: 1
 
+tempo:
+   mês:
+      janeiro: 1
+      fevereiro: 1
+      março: 1
+      abril: 1
+      maio: 1
+      junho: 1
+      julho: 1
+      agosto: 1
+      setembro: 1
+      outubro: 1
+      novembro: 1
+      dezembro: 1
+
 artefacto:
    documento: 1
+
 outro:
    signo: 1

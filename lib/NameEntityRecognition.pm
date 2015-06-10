@@ -25,20 +25,15 @@ my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 {no warnings 'redefine';
 ################################################
 ################################################
-RULES/m people
+RULES/m rewrite_entities
 ({.*?:.*?})=e=>$1
 (\p{Lu}\p{Ll}+(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}+)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
+(\p{Lu}\p{Ll}+(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}+)*)=e=>'{location:'.$1.'}'!! $self->is_a_location($1)
+(\p{Lu}\p{Ll}+(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
 
 RULES post_people
 {person:(.*?)}\s(e)\s{person:(.*?)}=e=>"{person:$1$2$3}"!! $self->post_person($1,$3)
-ENDRULES
-################################################
-################################################
-
-RULES/m entity
-({.*?:.*?})=e=>$1
-(\p{Lu}\p{Ll}+(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
 ################################################
 ################################################
@@ -47,6 +42,65 @@ REWRITE_RULES_BLOCK
 
 ####################################
 # Methods used by rewrite rules
+
+sub is_a_location{
+  my ($self, $str) = @_;
+
+  my $str_original = $str;
+
+  # remover partes dispensáveis
+  $str =~ s/(da|de|do|das|dos|Da|De|Do|Das|Dos)\s//g;
+
+  debug("\n=====start IS_A_LOCATION=====\n");
+
+  my $location_sim    = 0;
+  my $location_talvez = 0;
+  my $location_nao    = 0;
+
+  foreach my $n (split /\s/,$str) {
+    debug("   palavra: $n -> ");
+
+    # ver na análise morfológica
+    my @fea = $self->{dict}->fea($n);
+
+    my $palavras_invalidas = 0;
+    my $palavras_validas = 0;
+    foreach my $analise ( @fea ) {
+      if($analise->{CAT} =~ /np/ && $analise->{SEM} =~ /cid|ter/){
+        $palavras_validas++;
+      }else{
+        $palavras_invalidas++;
+      }
+    }
+
+    if($palavras_validas > 0){
+      $location_sim++;
+      debug("localidade (morf)\n");
+    }elsif($palavras_invalidas > 0){
+      $location_nao++;
+      debug("não é localidade (morf)\n");
+    }else{
+      $location_talvez++;
+      debug("não sei o que é isto (morf)\n");
+    }
+
+    if( $location_sim == 0 && $location_talvez == 0 && $location_nao > 0 ){
+      # se a primeira palavra que se detectou não corresponde a um nome, abortar
+      debug("\n=====IS_A_LOCATION? NO=====\n");
+      return 0;
+    }
+  }
+
+  debug("\n=====IS_A_LOCATION? YES=====\n");
+
+  $self->add_entity({
+    $str_original => {
+      is_a => 'location'
+      },
+    });
+
+  return 1;
+}
 
 sub is_an_entity{
   my ($self, $str) = @_;
@@ -58,7 +112,7 @@ sub is_an_entity{
   my $nomes_nao    = 0;
 
   foreach my $n (split /\s/,$str) {
-    debug("palavra: $n -> ");
+    debug("   palavra: $n -> ");
 
     # ver na análise morfológica
     my @fea = $self->{dict}->fea($n);
@@ -86,12 +140,18 @@ sub is_an_entity{
 
     if( $nomes_sim == 0 && $nomes_talvez == 0 && $nomes_nao > 0 ){
       # se a primeira palavra que se detectou não corresponde a um nome, abortar
-      debug("\n=====IS_AN_ENTITY? NO=====\n");
+      debug("=====IS_AN_ENTITY? NO=====\n");
       return 0;
     }
   }
 
-  debug("\n=====IS_AN_ENTITY? YES=====\n");
+  debug("=====IS_AN_ENTITY? YES=====\n");
+
+  $self->add_entity({
+    $str => {
+      is_a => 'entity'
+      },
+    });
 
   return 1;
 }
@@ -109,12 +169,15 @@ sub is_a_person{
   my $nomes_nao    = 0;
 
   debug("\n=====start IS_A_PERSON=====\n");
-  foreach my $n (split /\s/,$str) {
-    debug("palavra: $n -> ");
+
+  my @palavras = split /\s/,$str;
+
+  foreach my $n (@palavras) {
+    debug("   palavra: $n -> ");
 
     # ver na hash dos nomes
     if( defined( my $tipo = ($self->{names}->{$n} || $self->{names}->{lc($n)}) ) ){
-      debug("um nome $tipo\n");
+      debug("   um nome $tipo\n");
       $nomes_sim++;
       next;
     }
@@ -126,7 +189,11 @@ sub is_a_person{
     my $palavras_validas = 0;
     foreach my $analise ( @fea ) {
       if($analise->{CAT} =~ /np/){
-        $palavras_validas++;
+        if( ! (defined($analise->{SEM}) && $analise->{SEM} =~ /cid|ter/) ){
+          $palavras_validas++;
+        }elsif(){
+          
+        }
       }else{
         $palavras_invalidas++;
       }
@@ -151,7 +218,7 @@ sub is_a_person{
   }
   debug("=====IS_A_PERSON? YES=====\n");
 
-  #TODO: alguma heuristica que use a quantidade de nomes_sim, nomes_talvez e nomes_nao 
+  #TODO: alguma heuristica que use a quantidade de nomes_sim, nomes_talvez e nomes_nao
   #      para ajudar a deterinar se é mesmo um nome de pessoa ou não.
 
   $self->add_entity({
@@ -221,8 +288,7 @@ sub recognize_line{
   eval $self->{rewrite_rules};
   print STDERR $@ if ($@);
 
-  $line = people($line);
-  $line = entity($line);
+  $line = rewrite_entities($line);
 
   $self->review_entities();
   return 1;
@@ -284,6 +350,21 @@ sub Normalize_line {
   #join ' ', (split(/[^\w0-9()]+/, shift));
 
   return $line;
+}
+
+sub search_tree {
+  my ($tree, $search) = @_;
+
+  return '' unless( ref($tree) eq 'HASH' );
+
+  return $search if( defined($tree->{$search}) && $tree->{$search} == 1 );
+
+  foreach my $key (keys %$tree) {
+    my $result = search_tree( $tree->{$key}, $search );
+    return "$key, $result" if($result);
+  }
+
+  return '';
 }
 
 sub debug {
