@@ -222,6 +222,7 @@ sub recognize_line{
   print STDERR $@ if ($@);
 
   $line = people($line);
+  $line = entity($line);
 
   $self->review_entities();
   return 1;
