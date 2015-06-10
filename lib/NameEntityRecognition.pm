@@ -38,7 +38,7 @@ ENDRULES
 
 RULES/m entity
 ({.*?:.*?})=e=>$1
-(\p{Lu}\p{Ll}(\s\p{Lu}\p{Ll})*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
+(\p{Lu}\p{Ll}(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
 ################################################
 ################################################
