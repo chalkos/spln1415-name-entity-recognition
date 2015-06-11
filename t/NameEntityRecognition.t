@@ -73,6 +73,16 @@ is_deeply( rstr({'Guimarães'=>'apelido'}, {},
     'Joaquim Zworovitch' => {is_a => 'person'},
     'Zworovitch' => {is_a => 'person'},
     'Guimarães' => {is_a => 'location'},
-  }, "detecta que Guimarães localidade e que Maia não é localidade" );
+  }, "detecta que Guimarães localidade e que Zworovitch é nome" );
+
+#####################################
+is_deeply( rstr({}, {},
+  "Desde que o então presidente da Câmara de Lisboa António Costa anunciou, em"),
+  {
+    'António Costa' => {is_a => 'person', is_also => 'presidente da Câmara de Lisboa'},
+    'presidente da Câmara de Lisboa' => {is_a => 'thing'},
+    'Lisboa' => {is_a => 'location'},
+  }, "detecta uma entidade por estar na taxonomia" );
+
 
 done_testing();

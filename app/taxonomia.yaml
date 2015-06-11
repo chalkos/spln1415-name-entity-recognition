@@ -19,10 +19,11 @@ pessoa:
       compositor: 1
       pianista: 1
    político:
-      presidente da república: 1
+      primeiro ministro: 1
+      ministro: 1
+      presidente: 1
       deputado: 1
-      rei:
-         rei de portugal: 1
+      rei: 1
    religioso:
       cardeal: 1
       clérigo: 1
@@ -44,10 +45,15 @@ organização:
    jornal: 1
    hospital: 1
    instituição:
-      instituição religiosa: 1
+      instituição religiosa:
+         igreja: 1
       instituição de solidariedade: 1
-      instituição académica: 1
-      instituição cultural: 1
+      instituição académica:
+         universidade: 1
+      instituição cultural:
+         clube: 1
+         associação: 1
+         rancho: 1
       instituição administrativa:
          câmara municipal: 1
          governo: 1

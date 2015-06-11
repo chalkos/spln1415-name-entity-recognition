@@ -23,8 +23,22 @@ our $VERSION = '0.01';
 # highlight continues to work for 'normal' perl code)
 my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 {no warnings 'redefine';
+
+# começa numa cena da taxonomia, depois tem nomes comuns e cenas em maiusculas e (de|do|da, etc)
+my $taxoBegin = '(o|a|ao|à|aos|ás)';
+my $taxoLink  = 'da|de|do|das|dos|Da|De|Do|Das|Dos';
+
 ################################################
 ################################################
+RULES rewrite_taxonomy
+(?:[^\p{L}]|^)(\p{L}\p{Ll}+)=e=>"{taxo:$1}"!! $self->is_interesting($1)
+(?:[^\p{L}]|^){taxo:(.*?)}\s(\p{L}\p{Ll}+)=e=>"{taxo:$1 $2}"!! $self->is_interesting($1,$2)
+(?:[^\p{L}]|^)(\p{L}\p{Ll}+)\s{taxo:(.*?)}=e=>"{taxo:$1 $2}"!! $self->is_interesting($1,$2)
+(?:[^\p{L}]|^){taxo:(.*?)}\s($taxoLink)\s(\p{L}\p{Ll}+)=e=>"{taxo:$1 $2 $3}"!! $self->is_interesting($1,$2,$3)
+(?:[^\p{L}]|^)(\p{L}\p{Ll}+)\s($taxoLink)\s{taxo:(.*?)}=e=>"{taxo:$1 $2 $3}"!! $self->is_interesting($1,$2,$3)
+ENDRULES
+
+# RewriteRules bug: ^ não funciona para delimitar inicio de string quando se usa /m. falha sempre
 RULES/m rewrite_entities
 ({.*?:.*?})=e=>$1
 (\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
@@ -32,10 +46,7 @@ RULES/m rewrite_entities
 (\p{Lu}\p{Ll}+(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
 
-
-
-RULES post_people
-{person:(.*?)}\s(e)\s{person:(.*?)}=e=>"{person:$1$2$3}"!! $self->post_person($1,$3)
+RULES loose_ends
 ENDRULES
 ################################################
 ################################################
@@ -44,6 +55,21 @@ REWRITE_RULES_BLOCK
 
 ####################################
 # Methods used by rewrite rules
+
+sub is_interesting{
+  my $self = shift;
+  my $str = join ' ', @_;
+
+  debug("::::::::::::::::::::$str");
+
+  if( my $path = search_tree($self->{taxonomy}, $str) ){
+    debug(" <------------- $path");
+  }
+
+  debug("\n");
+
+  return 0;
+}
 
 sub is_a_location{
   my ($self, $str) = @_;
@@ -341,7 +367,10 @@ sub recognize_line{
   eval $self->{rewrite_rules};
   print STDERR $@ if ($@);
 
+  debug("\n\nLINE====>$line<====\n\n");
+  $line = rewrite_taxonomy($line);
   $line = rewrite_entities($line);
+  $line = loose_ends($line);
 
   $self->review_entities();
   return 1;
