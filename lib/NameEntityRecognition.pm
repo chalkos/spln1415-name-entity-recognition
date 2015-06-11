@@ -27,10 +27,12 @@ my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 ################################################
 RULES/m rewrite_entities
 ({.*?:.*?})=e=>$1
-(\p{Lu}\p{Ll}+(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}+)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
-(\p{Lu}\p{Ll}+(\s((da|de|do|das|dos|Da|De|Do|Das|Dos)\s)?\p{Lu}\p{Ll}+)*)=e=>'{location:'.$1.'}'!! $self->is_a_location($1)
+(\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
+(\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>'{location:'.$1.'}'!! $self->is_a_location($1)
 (\p{Lu}\p{Ll}+(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
+
+
 
 RULES post_people
 {person:(.*?)}\s(e)\s{person:(.*?)}=e=>"{person:$1$2$3}"!! $self->post_person($1,$3)
@@ -49,9 +51,9 @@ sub is_a_location{
   my $str_original = $str;
 
   # remover partes dispensáveis
-  $str =~ s/(da|de|do|das|dos|Da|De|Do|Das|Dos)\s//g;
+  $str =~ s/\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s/ /g;
 
-  debug("\n=====start IS_A_LOCATION=====\n");
+  #debug("\n=====start IS_A_LOCATION=====\n");
 
   my $location_sim    = 0;
   my $location_talvez = 0;
@@ -86,12 +88,12 @@ sub is_a_location{
 
     if( $location_sim == 0 && $location_talvez == 0 && $location_nao > 0 ){
       # se a primeira palavra que se detectou não corresponde a um nome, abortar
-      debug("\n=====IS_A_LOCATION? NO=====\n");
+      #debug("\n=====IS_A_LOCATION? NO=====\n");
       return 0;
     }
   }
 
-  debug("\n=====IS_A_LOCATION? YES=====\n");
+  debug("=====IS_A_LOCATION? YES=====\n");
 
   $self->add_entity({
     $str_original => {
@@ -105,7 +107,7 @@ sub is_a_location{
 sub is_an_entity{
   my ($self, $str) = @_;
 
-  debug("\n=====start IS_AN_ENTITY=====\n");
+  #debug("\n=====start IS_AN_ENTITY=====\n");
 
   my $nomes_sim    = 0;
   my $nomes_talvez = 0;
@@ -176,43 +178,92 @@ sub is_a_person{
     debug("   palavra: $n -> ");
 
     # ver na hash dos nomes
+    my $nome_encontrado_na_hash = 0;
     if( defined( my $tipo = ($self->{names}->{$n} || $self->{names}->{lc($n)}) ) ){
-      debug("   um nome $tipo\n");
-      $nomes_sim++;
-      next;
+      debug("hash de nomes: $tipo; ");
+      $nome_encontrado_na_hash=1;
     }
 
     # ver na análise morfológica
     my @fea = $self->{dict}->fea($n);
 
+    # se a palavra tiver uma possivel interpretação de nome próprio:
+    # --se a semantica da palavra não for terra ou cidade:
+    # ----provavelmente é nome de pessoa, continuar a ver o resto das análises morfológicas
+    # --senão e se o nome a analisar tiver apenas uma palavra (possivelmente uma referência a uma pessoa usando apenas o apelido)
+    # ----verificar se esse possível apelido já faz parte de algum nome de pessoa
+    # ----se sim
+    # ------provavelmente é uma pessoa, continuar a ver o resto das análises morfológicas
+    # ----se não
+    # ------provavelmente não é pessoa (e é uma terra ou cidade), continuar a ver o resto das análises morfológicas
+    # --senão
+    # ----casos estranhos, marcar como não identificável e continuar a ver o resto das análises morfológicas
+    # senão
+    # --provavelmente não é pessoa, continuar a ver o resto das análises morfológicas
     my $palavras_invalidas = 0;
     my $palavras_validas = 0;
     foreach my $analise ( @fea ) {
       if($analise->{CAT} =~ /np/){
-        if( ! (defined($analise->{SEM}) && $analise->{SEM} =~ /cid|ter/) ){
+        if( !(defined($analise->{SEM}) && $analise->{SEM} =~ /cid|ter|country/) ){
           $palavras_validas++;
-        }elsif(){
-          
+        }elsif(scalar(@palavras) == 1){
+          my $pertence = 0;
+          foreach my $key (keys %{$self->{entities}}) {
+            if($key =~ /(\s|^)$n(\s|$)/ && $self->{entities}{$key}[0]{is_a} eq 'person'){
+              $pertence=$key;
+              last;
+            }
+          }
+          if($pertence){
+            debug("é localidade, mas faz parte do nome '$pertence'; ");
+            $palavras_validas++;
+          }else{
+            debug("localidade que não aparece em nenhum nome até agora; ");
+            $palavras_invalidas++;
+          }
         }
       }else{
         $palavras_invalidas++;
       }
     }
 
+    # se não houve resultados conclusivos até agora, procurar a palavra nos nomes de pessoa existentes
+    if($palavras_invalidas == 0 && $palavras_validas == 0 && scalar(@palavras) == 1){
+      foreach my $key (keys %{$self->{entities}}) {
+        if($key =~ /(\s|^)$n(\s|$)/ && $self->{entities}{$key}[0]{is_a} eq 'person'){
+          debug("não foi identificada, mas faz parte do nome '$key'; ");
+          $palavras_validas++;
+          last;
+        }
+      }
+    }
+
+    # decidir se a palavra é parte de um nome ou não
+    # se houver sinal de que é válida
+    # --assinalar que é nome
+    # senão e se houver sinal que é inválida
+    # --assinalar que não é nome
+    # senão (ou seja, não foi possivel identificar) mas foi encontrada na hash de nomes
+    # --assinalar que é nome
+    # senão (é mesmo não indentificado)
+    # --assinalar que poderá ser um nome
     if($palavras_validas > 0){
       $nomes_sim++;
       debug("nome próprio (morf)\n");
     }elsif($palavras_invalidas > 0){
       $nomes_nao++;
       debug("não é nome proprio (morf)\n");
+    }elsif($nome_encontrado_na_hash){
+      $nomes_sim++;
+      debug("é nome próprio (hash de nomes)\n");
     }else{
       $nomes_talvez++;
       debug("não sei o que é isto (morf)\n");
     }
 
+    # se a primeira palavra que se detectou não corresponde a um nome, cancelar. Não é um nome.
     if( $nomes_sim == 0 && $nomes_talvez == 0 && $nomes_nao > 0 ){
-      # se a primeira palavra que se detectou não corresponde a um nome, abortar
-      debug("=====IS_A_PERSON? NO=====\n");
+      #debug("=====IS_A_PERSON? NO=====\n");
       return 0;
     }
   }

@@ -42,16 +42,37 @@ sub rstr {
 
 is_deeply( rstr({}, {}, "nada de especial"), {}, "linha sem entidades" );
 
+#####################################
 is_deeply( rstr({}, {},
-  "o livro \"Uma Página em Branco\", da autoria de José Alberto Branco da Silva Santos, vendeu"),
+  "o livro da autoria de José Alberto Branco da Silva Santos, vendeu"),
   {
     'José Alberto Branco da Silva Santos' => {is_a => 'person'},
   }, "detecta nome de pessoa" );
 
-is_deeply( rstr({}, {},
-  "o empresário Hugo Valentim da Silva e Cunha anunciou"),
+#####################################
+is_deeply( rstr({'Guimarães'=>'apelido'}, {},
+  "Hugo Guimarães falou... e Guimarães afirmou também.."),
   {
-    'Hugo Valentim da Silva e Cunha' => {is_a => 'person'},
-  }, "detecta nome de pessoa" );
+    'Hugo Guimarães' => {is_a => 'person'},
+    'Guimarães' => {is_a => 'person'},
+  }, "detecta que Guimarães é apelido e não cidade" );
+
+#####################################
+is_deeply( rstr({'Guimarães'=>'apelido'}, {},
+  "Hugo Maia falou... em Guimarães, Maia afirmou também.."),
+  {
+    'Hugo Maia' => {is_a => 'person'},
+    'Maia' => {is_a => 'person'},
+    'Guimarães' => {is_a => 'location'},
+  }, "detecta que Guimarães localidade e que Maia não é localidade" );
+
+#####################################
+is_deeply( rstr({'Guimarães'=>'apelido'}, {},
+  "Joaquim Zworovitch... em Guimarães, Zworovitch depois afirmou"),
+  {
+    'Joaquim Zworovitch' => {is_a => 'person'},
+    'Zworovitch' => {is_a => 'person'},
+    'Guimarães' => {is_a => 'location'},
+  }, "detecta que Guimarães localidade e que Maia não é localidade" );
 
 done_testing();
