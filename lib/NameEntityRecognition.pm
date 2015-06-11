@@ -179,7 +179,7 @@ sub is_a_person{
 
     # ver na hash dos nomes
     my $nome_encontrado_na_hash = 0;
-    if( defined( my $tipo = ($self->{names}->{$n} || $self->{names}->{lc($n)}) ) ){
+    if( defined( my $tipo = $self->{names}->{$n} ) ){
       debug("hash de nomes: $tipo; ");
       $nome_encontrado_na_hash=1;
     }
@@ -188,7 +188,7 @@ sub is_a_person{
     my @fea = $self->{dict}->fea($n);
 
     # se a palavra tiver uma possivel interpretação de nome próprio:
-    # --se a semantica da palavra não for terra ou cidade:
+    # --se a semantica da palavra for nome português ou estrangeiro
     # ----provavelmente é nome de pessoa, continuar a ver o resto das análises morfológicas
     # --senão e se o nome a analisar tiver apenas uma palavra (possivelmente uma referência a uma pessoa usando apenas o apelido)
     # ----verificar se esse possível apelido já faz parte de algum nome de pessoa
@@ -204,8 +204,10 @@ sub is_a_person{
     my $palavras_validas = 0;
     foreach my $analise ( @fea ) {
       if($analise->{CAT} =~ /np/){
-        if( !(defined($analise->{SEM}) && $analise->{SEM} =~ /cid|ter|country/) ){
+        if( defined($analise->{SEM}) && $analise->{SEM} =~ /^(p|p1)$/ ){
           $palavras_validas++;
+        #}elsif( !(defined($analise->{SEM}) && $analise->{SEM} =~ /cid|ter|country/) ){
+        #  $palavras_validas++;
         }elsif(scalar(@palavras) == 1){
           my $pertence = 0;
           foreach my $key (keys %{$self->{entities}}) {
