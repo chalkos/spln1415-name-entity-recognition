@@ -329,9 +329,9 @@ sub new{
     'rewrite_rules' => ($re_write ? $re_write : $rewrite_rules),
     }, $class;
 
-  my $rec = NER::Recognizer->new($names, $taxonomy);
-  my @result = $rec->recognize('text');
-  print Dumper(\@result);
+  #my $rec = NER::Recognizer->new($names, $taxonomy);
+  #my @result = $rec->recognize('text');
+  #print Dumper(\@result);
 
   return $self;
 }
