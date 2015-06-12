@@ -43,6 +43,10 @@ sub recognize {
   # ordenar por ordem decrescente de niveis de confiança
   my @sortedLvls = sort { $b->{lvl} <=> $a->{lvl} } @confLvls;
 
+  if( $sortedLvls[0]->{lvl} < 40 ){
+    return('nenhum',0,0);
+  }
+
   return (
     $sortedLvls[0]->{type}, # o tipo reconhecido
     $sortedLvls[0]->{lvl}, # a confiança no tipo reconhecido
