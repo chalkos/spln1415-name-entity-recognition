@@ -1,5 +1,5 @@
 # Before 'make install' is performed this script should be runnable with
-# 'make test'. After 'make install' it should work as 'perl NameEntityRecognition.t'
+# 'make test'. After 'make install' it should work as 'perl NER.t'
 
 #########################
 
@@ -11,9 +11,9 @@ use utf8::all;
 use Test::More;
 
 # é possível usar o módulo
-BEGIN { use_ok('NameEntityRecognition') };
+BEGIN { use_ok('NER') };
 # verificar se os métodos principais estão definidos
-can_ok('NameEntityRecognition',
+can_ok('NER',
   qw(
     new
     recognize_file
@@ -25,7 +25,7 @@ can_ok('NameEntityRecognition',
     entities
   ));
 
-isa_ok( NameEntityRecognition->new, 'NameEntityRecognition' );
+isa_ok( NER->new, 'NER' );
 
 #########################
 
@@ -33,7 +33,7 @@ isa_ok( NameEntityRecognition->new, 'NameEntityRecognition' );
 sub rstr {
   my ($nomes, $taxonomia, $texto) = @_;
 
-  my $recognizer = NameEntityRecognition->new($nomes, $taxonomia);
+  my $recognizer = NER->new($nomes, $taxonomia);
   $recognizer->recognize_string($texto);
 
   return $recognizer->entities;

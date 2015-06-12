@@ -1,4 +1,4 @@
-package NameEntityRecognition;
+package NER;
 
 use 5.020001;
 use strict;
@@ -8,13 +8,15 @@ use utf8::all;
 use Lingua::Jspell;
 use Text::RewriteRules;
 
+use NER::Recognizer;
+
 use Data::Dumper;
 
 require Exporter;
 
 our @ISA = qw(Exporter);
 
-our @EXPORT_OK = qw( Normalize_line );
+our @EXPORT_OK = qw( Normalize_line search_tree );
 
 our $VERSION = '0.01';
 
@@ -60,13 +62,13 @@ sub is_interesting{
   my $self = shift;
   my $str = join ' ', @_;
 
-  debug("::::::::::::::::::::$str");
+  #debug("::::::::::::::::::::$str");
 
   if( my $path = search_tree($self->{taxonomy}, $str) ){
-    debug(" <------------- $path");
+    #debug(" <------------- $path");
   }
 
-  debug("\n");
+  #debug("\n");
 
   return 0;
 }
@@ -327,6 +329,10 @@ sub new{
     'rewrite_rules' => ($re_write ? $re_write : $rewrite_rules),
     }, $class;
 
+  my $rec = NER::Recognizer->new($names, $taxonomy);
+  my @result = $rec->recognize('text');
+  print Dumper(\@result);
+
   return $self;
 }
 
@@ -460,16 +466,16 @@ __END__
 
 =head1 NAME
 
-NameEntityRecognition - Perl extension for blah blah blah
+NER - Perl extension for blah blah blah
 
 =head1 SYNOPSIS
 
-  use NameEntityRecognition;
+  use NER;
   blah blah blah
 
 =head1 DESCRIPTION
 
-Stub documentation for NameEntityRecognition, created by h2xs. It looks like the
+Stub documentation for NER, created by h2xs. It looks like the
 author of the extension was negligent enough to leave the stub
 unedited.
 

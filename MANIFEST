@@ -2,5 +2,5 @@ Changes
 Makefile.PL
 MANIFEST
 README
-t/NameEntityRecognition.t
-lib/NameEntityRecognition.pm
+t/NER.t
+lib/NER.pm

@@ -1,7 +1,7 @@
 use strict;
 use Data::Dumper;
 use utf8::all;
-use NameEntityRecognition;
+use NER;
 use Lingua::Jspell;
 
 use YAML ('LoadFile');
@@ -16,7 +16,7 @@ my $nomes = readYAML('app/nomes.yaml');
 my $taxonomias = readYAML('app/taxonomia.yaml');
 my $noticia = 'app/noticia.txt';
 
-my $recognizer = NameEntityRecognition->new($nomes,$taxonomias);
+my $recognizer = NER->new($nomes,$taxonomias);
 
 $recognizer->recognize_file($noticia);
 

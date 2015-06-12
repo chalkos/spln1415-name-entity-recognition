@@ -11,10 +11,10 @@ END_OF_RULE
 }
 
 WriteMakefile(
-    NAME              => 'NameEntityRecognition',
-    VERSION_FROM      => 'lib/NameEntityRecognition.pm', # finds $VERSION, requires EU::MM from perl >= 5.5
+    NAME              => 'NER',
+    VERSION_FROM      => 'lib/NER.pm', # finds $VERSION, requires EU::MM from perl >= 5.5
     PREREQ_PM         => {}, # e.g., Module::Name => 1.1
-    ABSTRACT_FROM     => 'lib/NameEntityRecognition.pm', # retrieve abstract from module
+    ABSTRACT_FROM     => 'lib/NER.pm', # retrieve abstract from module
     AUTHOR            => 'B. Ferreira <chalkos@chalkos.net>, M. Pinto <mcpinto98@gmail.com>',
     #LICENSE           => 'perl',
     #Value must be from legacy list of licenses here
