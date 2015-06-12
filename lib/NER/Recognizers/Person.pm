@@ -14,22 +14,22 @@ our @ISA = qw(NER::Recognizers::Base);
 ######################################
 
 sub runAll {
-  my ($self,$text) = @_;
+  my ($self,$str) = @_;
 
   return (
-    $self->test1($text),
-    $self->test2($text),
+    $self->test1($str),
+    $self->test2($str),
   );
 }
 
 sub test1 {
-  my ($self, $text) = @_;
+  my ($self, $str) = @_;
   return 0;
 }
 
 sub test2 {
-  my ($self, $text) = @_;
-  return 100;
+  my ($self, $str) = @_;
+  return 0;
 }
 
 1;

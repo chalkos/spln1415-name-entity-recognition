@@ -28,6 +28,10 @@ sub new{
 sub recognize {
   my ($self,$text) = @_;
 
+  # Maiusculas e minusculas não são suficientemente fiáveis,
+  # por isso usar sempre minusculas
+  $text = lc($text);
+
   # obter os niveis de confiança
   my @confLvls = (
     { type=> 'person',
@@ -45,7 +49,7 @@ sub recognize {
     $sortedLvls[0]->{lvl} - $sortedLvls[1]->{lvl}); # proximidade ao segundo lugar
 }
 
-
+###################################
 # creates subroutines like:
 # is_a_person
 # is_a_location

@@ -14,22 +14,54 @@ our @ISA = qw(NER::Recognizers::Base);
 ######################################
 
 sub runAll {
-  my ($self,$text) = @_;
+  my ($self,$str) = @_;
 
   return (
-    $self->test1($text),
-    $self->test2($text),
+    $self->rec_jspell_base($str),
+    $self->rec_altas_directas($str),
   );
 }
 
-sub test1 {
-  my ($self, $text) = @_;
-  return 0;
+# retira da|de|do|das|dos
+# usa o jspell para perceber se as palavras são cidades, terras ou países
+# no fim devolve a percentagem (de 0 a 100) de locais em relação ao total de palavras
+sub rec_jspell_base {
+  my ($self, $str) = @_;
+
+  $str =~ s/\s(da|de|do|das|dos)\s/ /g;
+
+  my ($sim,$nao) = (0,0);
+
+  foreach my $n (split /\s/,$str) {
+    my @fea = $self->{dict}->fea($n);
+    foreach my $analise ( @fea ) {
+      if($analise->{CAT} =~ /np/ && $analise->{SEM} =~ /cid|ter|country/){
+        $sim++;
+      }else{
+        $nao++;
+      }
+    }
+  }
+
+  my $confianca = $sim / ($sim+$nao) * 100;
+  #$confianca = 85 if($confianca > 85);
+
+  return $confianca;
 }
 
-sub test2 {
-  my ($self, $text) = @_;
-  return 20;
+sub rec_altas_directas {
+  my ($self, $str) = @_;
+
+  my @expReg = (
+    qr/^vila nova de /,
+    qr/^vila /,
+  );
+
+  foreach my $exp (@expReg) {
+    return 80 if( $str =~ $exp );
+  }
+
+  return 0;
 }
 
 1;

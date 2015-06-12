@@ -6,6 +6,7 @@ use warnings;
 use utf8::all;
 
 use Data::Dumper;
+use Lingua::Jspell;
 
 use List::Util qw(sum);
 use NER qw(search_tree);
@@ -19,6 +20,7 @@ sub new{
   my $self = bless {
     'name' => $names,
     'taxo' => $taxonomy,
+    'dict' => Lingua::Jspell->new("port"),
     }, $class;
 
   return $self;
@@ -31,5 +33,11 @@ sub analyse {
 
   return sum(@results) / (scalar @results);
 }
+
+# subrotinas que devem ser definidas nos módulos que herdarem deste:
+#
+# runAll($str) -> dá os valores de certeza das várias análises. Valores
+#     de 0 a 100, sendo que 0 é «You know nothing, Jon Snow» e 100 é
+#     «Eu nunca me engano e raramente tenho dúvidas»
 
 1;

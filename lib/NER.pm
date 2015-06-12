@@ -76,60 +76,16 @@ sub is_interesting{
 sub is_a_location{
   my ($self, $str) = @_;
 
-  my $str_original = $str;
-
-  # remover partes dispensáveis
-  $str =~ s/\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s/ /g;
-
-  #debug("\n=====start IS_A_LOCATION=====\n");
-
-  my $location_sim    = 0;
-  my $location_talvez = 0;
-  my $location_nao    = 0;
-
-  foreach my $n (split /\s/,$str) {
-    debug("   palavra: $n -> ");
-
-    # ver na análise morfológica
-    my @fea = $self->{dict}->fea($n);
-
-    my $palavras_invalidas = 0;
-    my $palavras_validas = 0;
-    foreach my $analise ( @fea ) {
-      if($analise->{CAT} =~ /np/ && $analise->{SEM} =~ /cid|ter/){
-        $palavras_validas++;
-      }else{
-        $palavras_invalidas++;
-      }
-    }
-
-    if($palavras_validas > 0){
-      $location_sim++;
-      debug("localidade (morf)\n");
-    }elsif($palavras_invalidas > 0){
-      $location_nao++;
-      debug("não é localidade (morf)\n");
-    }else{
-      $location_talvez++;
-      debug("não sei o que é isto (morf)\n");
-    }
-
-    if( $location_sim == 0 && $location_talvez == 0 && $location_nao > 0 ){
-      # se a primeira palavra que se detectou não corresponde a um nome, abortar
-      #debug("\n=====IS_A_LOCATION? NO=====\n");
-      return 0;
-    }
+  if( $self->{recognizer}->is_a_location($str) ){
+    $self->add_entity({
+      $str => {
+        is_a => 'location'
+        },
+      });
+    return 1;
   }
 
-  debug("=====IS_A_LOCATION? YES=====\n");
-
-  $self->add_entity({
-    $str_original => {
-      is_a => 'location'
-      },
-    });
-
-  return 1;
+  return 0;
 }
 
 sub is_an_entity{
@@ -327,11 +283,8 @@ sub new{
     'taxonomy' => $taxonomy,
     'entities' => {}, #recognized entities
     'rewrite_rules' => ($re_write ? $re_write : $rewrite_rules),
+    'recognizer' => NER::Recognizer->new($names, $taxonomy),
     }, $class;
-
-  #my $rec = NER::Recognizer->new($names, $taxonomy);
-  #my @result = $rec->recognize('text');
-  #print Dumper(\@result);
 
   return $self;
 }
@@ -457,7 +410,7 @@ sub search_tree {
 
 sub debug {
   my $str = shift;
-  print STDERR $str;
+  #print STDERR $str;
 }
 
 1;
