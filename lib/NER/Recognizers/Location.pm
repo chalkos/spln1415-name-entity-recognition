@@ -6,6 +6,7 @@ use warnings;
 use utf8::all;
 
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use Lingua::Jspell;
 
 require NER::Recognizers::Base;

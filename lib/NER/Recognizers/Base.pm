@@ -6,6 +6,7 @@ use warnings;
 use utf8::all;
 
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use Lingua::Jspell;
 
 use List::Util qw(sum);
@@ -16,10 +17,11 @@ use NER qw(search_tree);
 # em todos os outros módulos NER::Recognizers::*
 
 sub new{
-  my ($class,$names,$taxonomy) = @_;
+  my ($class,$names,$taxonomy,$entities) = @_;
   my $self = bless {
     'name' => $names,
     'taxo' => $taxonomy,
+    'enti' => $entities,
     'dict' => Lingua::Jspell->new("port"),
     }, $class;
 

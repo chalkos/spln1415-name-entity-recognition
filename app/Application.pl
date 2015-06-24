@@ -1,5 +1,6 @@
 use strict;
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 use utf8::all;
 use NER;
 use Lingua::Jspell;

@@ -11,6 +11,7 @@ use Text::RewriteRules;
 use NER::Recognizer;
 
 use Data::Dumper;
+$Data::Dumper::Sortkeys = 1;
 
 require Exporter;
 
@@ -40,11 +41,11 @@ RULES rewrite_taxonomy
 (?:[^\p{L}]|^)(\p{L}\p{Ll}+)\s($taxoLink)\s{taxo:(.*?)}=e=>"{taxo:$1 $2 $3}"!! $self->is_interesting($1,$2,$3)
 ENDRULES
 
+#([Cc][aâ]mara\s([Mm]unicipal\s)?([Dd][aeo])?)
 # RewriteRules bug: ^ não funciona para delimitar inicio de string quando se usa /m. falha sempre
 RULES/m rewrite_entities
 ({.*?:.*?})=e=>$1
-(\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>'{person:'.$1.'}'!! $self->is_a_person($1)
-(\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>'{location:'.$1.'}'!! $self->is_a_location($1)
+(\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>$RWTEXT!! $self->recognize($1)
 (\p{Lu}\p{Ll}+(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
 
@@ -54,6 +55,9 @@ ENDRULES
 ################################################
 }
 REWRITE_RULES_BLOCK
+
+# global variable to help text rewriting
+our $RWTEXT;
 
 ####################################
 # Methods used by rewrite rules
@@ -73,19 +77,24 @@ sub is_interesting{
   return 0;
 }
 
-sub is_a_location{
+sub recognize{
   my ($self, $str) = @_;
 
-  if( $self->{recognizer}->is_a_location($str) ){
-    $self->add_entity({
-      $str => {
-        is_a => 'location'
-        },
-      });
-    return 1;
-  }
+  my ($tipo, $lvl, $diff) = $self->{recognizer}->recognize($str);
 
-  return 0;
+  # se os niveis de confiança não forem suficientes, ignorar
+  return 0 if( $lvl < 40 );
+
+  # caso contrário:
+
+  # adicionar à colecção de entidades
+  $self->add_entity({
+    $str => { is_a => $tipo },
+  });
+
+  # definir o texto de substituição
+  $RWTEXT = '{'.$tipo.':'.$str.'}';
+  return 1;
 }
 
 sub is_an_entity{
@@ -142,148 +151,19 @@ sub is_an_entity{
   return 1;
 }
 
-sub is_a_person{
-  my ($self, $str) = @_;
-
-  my $str_original = $str;
-
-  # remover partes dispensáveis
-  $str =~ s/(da|de|do|das|dos|Da|De|Do|Das|Dos)\s//g;
-
-  my $nomes_sim    = 0;
-  my $nomes_talvez = 0;
-  my $nomes_nao    = 0;
-
-  debug("\n=====start IS_A_PERSON=====\n");
-
-  my @palavras = split /\s/,$str;
-
-  foreach my $n (@palavras) {
-    debug("   palavra: $n -> ");
-
-    # ver na hash dos nomes
-    my $nome_encontrado_na_hash = 0;
-    if( defined( my $tipo = $self->{names}->{$n} ) ){
-      debug("hash de nomes: $tipo; ");
-      $nome_encontrado_na_hash=1;
-    }
-
-    # ver na análise morfológica
-    my @fea = $self->{dict}->fea($n);
-
-    # se a palavra tiver uma possivel interpretação de nome próprio:
-    # --se a semantica da palavra for nome português ou estrangeiro
-    # ----provavelmente é nome de pessoa, continuar a ver o resto das análises morfológicas
-    # --senão e se o nome a analisar tiver apenas uma palavra (possivelmente uma referência a uma pessoa usando apenas o apelido)
-    # ----verificar se esse possível apelido já faz parte de algum nome de pessoa
-    # ----se sim
-    # ------provavelmente é uma pessoa, continuar a ver o resto das análises morfológicas
-    # ----se não
-    # ------provavelmente não é pessoa (e é uma terra ou cidade), continuar a ver o resto das análises morfológicas
-    # --senão
-    # ----casos estranhos, marcar como não identificável e continuar a ver o resto das análises morfológicas
-    # senão
-    # --provavelmente não é pessoa, continuar a ver o resto das análises morfológicas
-    my $palavras_invalidas = 0;
-    my $palavras_validas = 0;
-    foreach my $analise ( @fea ) {
-      if($analise->{CAT} =~ /np/){
-        if( defined($analise->{SEM}) && $analise->{SEM} =~ /^(p|p1)$/ ){
-          $palavras_validas++;
-        #}elsif( !(defined($analise->{SEM}) && $analise->{SEM} =~ /cid|ter|country/) ){
-        #  $palavras_validas++;
-        }elsif(scalar(@palavras) == 1){
-          my $pertence = 0;
-          foreach my $key (keys %{$self->{entities}}) {
-            if($key =~ /(\s|^)$n(\s|$)/ && $self->{entities}{$key}[0]{is_a} eq 'person'){
-              $pertence=$key;
-              last;
-            }
-          }
-          if($pertence){
-            debug("é localidade, mas faz parte do nome '$pertence'; ");
-            $palavras_validas++;
-          }else{
-            debug("localidade que não aparece em nenhum nome até agora; ");
-            $palavras_invalidas++;
-          }
-        }
-      }else{
-        $palavras_invalidas++;
-      }
-    }
-
-    # se não houve resultados conclusivos até agora, procurar a palavra nos nomes de pessoa existentes
-    if($palavras_invalidas == 0 && $palavras_validas == 0 && scalar(@palavras) == 1){
-      foreach my $key (keys %{$self->{entities}}) {
-        if($key =~ /(\s|^)$n(\s|$)/ && $self->{entities}{$key}[0]{is_a} eq 'person'){
-          debug("não foi identificada, mas faz parte do nome '$key'; ");
-          $palavras_validas++;
-          last;
-        }
-      }
-    }
-
-    # decidir se a palavra é parte de um nome ou não
-    # se houver sinal de que é válida
-    # --assinalar que é nome
-    # senão e se houver sinal que é inválida
-    # --assinalar que não é nome
-    # senão (ou seja, não foi possivel identificar) mas foi encontrada na hash de nomes
-    # --assinalar que é nome
-    # senão (é mesmo não indentificado)
-    # --assinalar que poderá ser um nome
-    if($palavras_validas > 0){
-      $nomes_sim++;
-      debug("nome próprio (morf)\n");
-    }elsif($palavras_invalidas > 0){
-      $nomes_nao++;
-      debug("não é nome proprio (morf)\n");
-    }elsif($nome_encontrado_na_hash){
-      $nomes_sim++;
-      debug("é nome próprio (hash de nomes)\n");
-    }else{
-      $nomes_talvez++;
-      debug("não sei o que é isto (morf)\n");
-    }
-
-    # se a primeira palavra que se detectou não corresponde a um nome, cancelar. Não é um nome.
-    if( $nomes_sim == 0 && $nomes_talvez == 0 && $nomes_nao > 0 ){
-      #debug("=====IS_A_PERSON? NO=====\n");
-      return 0;
-    }
-  }
-  debug("=====IS_A_PERSON? YES=====\n");
-
-  #TODO: alguma heuristica que use a quantidade de nomes_sim, nomes_talvez e nomes_nao
-  #      para ajudar a deterinar se é mesmo um nome de pessoa ou não.
-
-  $self->add_entity({
-    $str_original => {
-      is_a => 'person'
-      },
-    });
-
-  return 1;
-}
-
-sub post_person {
-  my ($self, $fst, $snd) = @_;
-  0
-}
-
 ####################################
 # Object methods
 
 sub new{
   my ($class, $names, $taxonomy, $re_write) = @_;
+  my $entities = {};
   my $self = bless {
     'dict' => Lingua::Jspell->new("port"),
     'names' => $names,
     'taxonomy' => $taxonomy,
-    'entities' => {}, #recognized entities
+    'entities' => $entities, #recognized entities
     'rewrite_rules' => ($re_write ? $re_write : $rewrite_rules),
-    'recognizer' => NER::Recognizer->new($names, $taxonomy),
+    'recognizer' => NER::Recognizer->new($names, $taxonomy, $entities),
     }, $class;
 
   return $self;
