@@ -18,11 +18,11 @@ sub runAll {
   my ($self,$str) = @_;
 
   return (
-    $self->rec_especificas($str),
+    $self->rec_taxonomia($str),
   );
 }
 
-sub rec_especificas {
+sub rec_taxonomia {
   my ($self, $str) = @_;
 
   return 0 unless(defined $self->{more}{RW_TAXONOMY_ROLE_LHS});

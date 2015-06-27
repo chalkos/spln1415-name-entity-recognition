@@ -28,6 +28,7 @@ my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 {no warnings 'redefine';
 
 my $RW_TAXONOMY_ROLE_LHS = $self->{RW_TAXONOMY_ROLE_LHS};
+my $RW_TAXONOMY_ORGANIZATION_LHS = $self->{RW_TAXONOMY_ORGANIZATION_LHS};
 
 my $taxoBegin = '(o|a|ao|à|aos|ás)';
 my $taxoLink  = 'da|de|do|das|dos|Da|De|Do|Das|Dos';
@@ -51,7 +52,7 @@ ENDRULES
 #((?<!\p{L})$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
 
 # RewriteRules bug: ^ não funciona para delimitar inicio de string quando se usa /m. falha sempre
-# RewriteRules bug: lookbehinds positivos nao funcionam
+# RewriteRules bug: lookbehinds positivos nao funcionam no inicio da expressão regular (com /m)
 RULES/m rewrite_entities
 ({.*?:.*?})=e=>$1
 
@@ -62,11 +63,15 @@ RULES/m rewrite_entities
 ^($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
 (?<!\p{L})($RW_TAXONOMY_ROLE_LHS)$=e=>$RWTEXT!! $self->recognize($1)
 
-(?<!\p{L})($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
-^($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
-(?<!\p{L})($NER::Recognizers::Date::REGEX_DATE)$=e=>$RWTEXT!! $self->recognize2($1)
-((?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)(?!\p{L})=e=>$1.' '.$RWTEXT!! $self->recognize2($2)
-((?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)$=e=>$1.' '.$RWTEXT!! $self->recognize2($2)
+(?<!\p{L})($RW_TAXONOMY_ORGANIZATION_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
+^($RW_TAXONOMY_ORGANIZATION_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
+(?<!\p{L})($RW_TAXONOMY_ORGANIZATION_LHS)$=e=>$RWTEXT!! $self->recognize2($1)
+
+(?<!\p{L})($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
+^($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
+(?<!\p{L})($NER::Recognizers::Date::REGEX_DATE)$=e=>$RWTEXT!! $self->recognize($1)
+(?<!\p{L})((?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)(?!\p{L})=e=>$1.' '.$RWTEXT!! $self->recognize($2)
+(?<!\p{L})((?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)$=e=>$1.' '.$RWTEXT!! $self->recognize($2)
 
 (\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>$RWTEXT!! $self->recognize($1)
 
@@ -111,7 +116,7 @@ sub is_interesting{
 }
 
 sub recognize2{
-  print "~~~~data: " . $_[1] . "\n";
+  print "~~~~organization: " . $_[1] . "\n";
   recognize(@_);
 }
 
@@ -203,24 +208,8 @@ sub new{
   $re_write = $rewrite_rules if( !defined $re_write || (defined $re_write && !@$re_write) );
   #print STDERR Dumper($re_write);
 
-  my $RW_TAXONOMY_ROLE_LHS;
-
-  if( defined $taxonomy->{pessoa} ){
-    my @taxonomy_rules;
-    foreach my $word (get_words_from_tree($taxonomy->{pessoa})) {
-      #meter uma versão em lower case
-      $word = lc $word;
-      #push @taxonomy_rules, $word;
-      #meter uma versão com a primeira letra maiuscula e a primeira
-      #  letra de cada palavra com 4 ou mais letras em maiúscula
-      $word =~ s/(?<!\p{L})(\p{L})(?=\p{L}\p{L}\p{L}+)/'['.uc($1).$1.']'/ge;
-      $word =~ s/^(\p{L})/'['.uc($1).$1.']'/ge;
-      push @taxonomy_rules, $word;
-    }
-    $RW_TAXONOMY_ROLE_LHS = join '|', @taxonomy_rules;
-  }else{
-    $RW_TAXONOMY_ROLE_LHS = '(?=a)b'; # falha sempre
-  }
+  my $RW_TAXONOMY_ROLE_LHS = taxonomy_to_regex($taxonomy, 'pessoa');
+  my $RW_TAXONOMY_ORGANIZATION_LHS = taxonomy_to_regex($taxonomy, 'organização');
 
   my $entities = {};
   my $self = bless {
@@ -229,10 +218,14 @@ sub new{
     'taxonomy' => $taxonomy,
     'entities' => $entities, #recognized entities
     'rewrite_rules' => $re_write,
-    'recognizer' => NER::Recognizer->new($names, $taxonomy, $entities, {RW_TAXONOMY_ROLE_LHS=>$RW_TAXONOMY_ROLE_LHS}),
+    'recognizer' => NER::Recognizer->new($names, $taxonomy, $entities, {
+      RW_TAXONOMY_ROLE_LHS=>$RW_TAXONOMY_ROLE_LHS,
+      RW_TAXONOMY_ORGANIZATION_LHS=>$RW_TAXONOMY_ORGANIZATION_LHS,
+      }),
 
     # possíveis cargos de pessoas, obtidos a partir da taxonomia, na chave pessoa
     'RW_TAXONOMY_ROLE_LHS' => $RW_TAXONOMY_ROLE_LHS,
+    'RW_TAXONOMY_ORGANIZATION_LHS' => $RW_TAXONOMY_ORGANIZATION_LHS,
     }, $class;
 
   return $self;
@@ -359,6 +352,28 @@ sub get_words_from_tree {
   }
 
   return @words;
+}
+
+sub taxonomy_to_regex {
+  my ($taxonomy, $key) = @_;
+
+  if( defined $taxonomy->{$key} ){
+    my @taxonomy_rules;
+    my @words = get_words_from_tree($taxonomy->{$key});
+    # o sort é para as palavras mais compridas estarem primeiro e assim
+    #  fazerem match antes de se experimentar as mais curtas
+    foreach my $word (sort { length $b <=> length $a } @words) {
+      $word = lc $word;
+      # meter uma versão com a primeira letra maiuscula e a primeira
+      #      letra de cada palavra com 4 ou mais letras em maiúscula
+      $word =~ s/(?<!\p{L})(\p{L})(?=\p{L}\p{L}\p{L}+)/'['.uc($1).$1.']'/ge;
+      $word =~ s/^(\p{L})/'['.uc($1).$1.']'/ge;
+      push @taxonomy_rules, $word;
+    }
+    return join '|', @taxonomy_rules;
+  }else{
+    return '^(?=y)w'; # falha sempre quase imediatamente
+  }
 }
 
 sub search_tree {

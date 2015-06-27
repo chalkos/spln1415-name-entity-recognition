@@ -34,7 +34,9 @@ pessoa:
       santo: 1
 
 organização:
-   organização história:
+   aeroporto:
+      aeroporto internacional: 1
+   organização_histórica:
       dinastia: 1
       cortes: 1
    pessoa colectiva: 1
