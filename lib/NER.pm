@@ -9,6 +9,7 @@ use Lingua::Jspell;
 use Text::RewriteRules;
 
 use NER::Recognizer;
+require NER::Recognizers::Date;
 
 use Data::Dumper;
 $Data::Dumper::Sortkeys = 1;
@@ -16,7 +17,6 @@ $Data::Dumper::Sortkeys = 1;
 require Exporter;
 
 our @ISA = qw(Exporter);
-
 our @EXPORT_OK = qw( Normalize_line search_tree get_words_from_tree);
 
 our $VERSION = '0.01';
@@ -51,6 +51,7 @@ ENDRULES
 #((?<!\p{L})$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
 
 # RewriteRules bug: ^ não funciona para delimitar inicio de string quando se usa /m. falha sempre
+# RewriteRules bug: lookbehinds positivos nao funcionam
 RULES/m rewrite_entities
 ({.*?:.*?})=e=>$1
 
@@ -60,6 +61,12 @@ RULES/m rewrite_entities
 (?<!\p{L})($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
 ^($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
 (?<!\p{L})($RW_TAXONOMY_ROLE_LHS)$=e=>$RWTEXT!! $self->recognize($1)
+
+(?<!\p{L})($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
+^($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
+(?<!\p{L})($NER::Recognizers::Date::REGEX_DATE)$=e=>$RWTEXT!! $self->recognize2($1)
+((?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)(?!\p{L})=e=>$1.' '.$RWTEXT!! $self->recognize2($2)
+((?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)$=e=>$1.' '.$RWTEXT!! $self->recognize2($2)
 
 (\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>$RWTEXT!! $self->recognize($1)
 
@@ -101,6 +108,11 @@ sub is_interesting{
   #debug("\n");
 
   return 0;
+}
+
+sub recognize2{
+  print "~~~~data: " . $_[1] . "\n";
+  recognize(@_);
 }
 
 sub recognize{
