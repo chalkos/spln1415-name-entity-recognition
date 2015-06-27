@@ -25,9 +25,9 @@ sub runAll {
 sub rec_especificas {
   my ($self, $str) = @_;
 
-  return 0 unless(defined $self->{more}{RW_TAXONOMY_LHS});
+  return 0 unless(defined $self->{more}{RW_TAXONOMY_ROLE_LHS});
 
-  my $regex = $self->{more}{RW_TAXONOMY_LHS};
+  my $regex = $self->{more}{RW_TAXONOMY_ROLE_LHS};
 
   return 90 if( $str =~ m/^($regex)$/ );
 
