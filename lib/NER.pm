@@ -17,7 +17,7 @@ require Exporter;
 
 our @ISA = qw(Exporter);
 
-our @EXPORT_OK = qw( Normalize_line search_tree );
+our @EXPORT_OK = qw( Normalize_line search_tree get_words_from_tree);
 
 our $VERSION = '0.01';
 
@@ -27,9 +27,12 @@ our $VERSION = '0.01';
 my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 {no warnings 'redefine';
 
-# começa numa cena da taxonomia, depois tem nomes comuns e cenas em maiusculas e (de|do|da, etc)
+my $RW_TAXONOMY_ROLE_LHS = $self->{RW_TAXONOMY_ROLE_LHS};
+
 my $taxoBegin = '(o|a|ao|à|aos|ás)';
 my $taxoLink  = 'da|de|do|das|dos|Da|De|Do|Das|Dos';
+
+my $word = '\p{L}+';
 
 ################################################
 ################################################
@@ -41,11 +44,25 @@ RULES rewrite_taxonomy
 (?:[^\p{L}]|^)(\p{L}\p{Ll}+)\s($taxoLink)\s{taxo:(.*?)}=e=>"{taxo:$1 $2 $3}"!! $self->is_interesting($1,$2,$3)
 ENDRULES
 
-#([Cc][aâ]mara\s([Mm]unicipal\s)?([Dd][aeo])?)
+#((?<!\p{L})$word\s$word\s$word\s$word\s$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
+#((?<!\p{L})$word\s$word\s$word\s$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
+#((?<!\p{L})$word\s$word\s$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
+#((?<!\p{L})$word\s$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
+#((?<!\p{L})$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
+
 # RewriteRules bug: ^ não funciona para delimitar inicio de string quando se usa /m. falha sempre
 RULES/m rewrite_entities
 ({.*?:.*?})=e=>$1
+
+([Cc][aâ]mara\s[Mm]unicipal)=e=>$RWTEXT!! $self->recognize($1)
+([Cc][aâ]mara(?!\s[Ff]otogr))=e=>$RWTEXT!! $self->recognize($1)
+
+(?<!\p{L})($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
+^($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
+(?<!\p{L})($RW_TAXONOMY_ROLE_LHS)$=e=>$RWTEXT!! $self->recognize($1)
+
 (\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>$RWTEXT!! $self->recognize($1)
+
 (\p{Lu}\p{Ll}+(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
 
@@ -56,8 +73,17 @@ ENDRULES
 }
 REWRITE_RULES_BLOCK
 
-# global variable to help text rewriting
+# variável global com o texto de substituição no right hand side da regra
 our $RWTEXT;
+
+
+#TODO: estava a fazer isto para obter uma lista de palavras a partir da taxonomia
+#      para depois meter uma regra para cada no sitio onde diz
+#      no texto do rewriterules: ~~~taxonomy_rules~~~
+#      - além disso tenho que fazer um recognizer para funções de pessoas/trabalhos que depois
+#        apanhe as capturas do rewrite
+#      - depois tentar apanhar o lisboa em presidente da Câmara de Lisboa António Costa
+
 
 ####################################
 # Methods used by rewrite rules
@@ -94,10 +120,15 @@ sub recognize{
 
   # definir o texto de substituição
   $RWTEXT = '{'.$tipo.':'.$str.'}';
+
+  # incrementar o contador de reescritas com sucesso
+  $self->{NUMBER_OF_RECOGNITIONS}++;
+
   return 1;
 }
 
 sub is_an_entity{
+  return 0;
   my ($self, $str) = @_;
 
   #debug("\n=====start IS_AN_ENTITY=====\n");
@@ -156,14 +187,40 @@ sub is_an_entity{
 
 sub new{
   my ($class, $names, $taxonomy, $re_write) = @_;
+
+  $re_write = $rewrite_rules if( !defined $re_write || (defined $re_write && !@$re_write) );
+  #print STDERR Dumper($re_write);
+
+  my $RW_TAXONOMY_ROLE_LHS;
+
+  if( defined $taxonomy->{pessoa} ){
+    my @taxonomy_rules;
+    foreach my $word (get_words_from_tree($taxonomy->{pessoa})) {
+      #meter uma versão em lower case
+      $word = lc $word;
+      #push @taxonomy_rules, $word;
+      #meter uma versão com a primeira letra maiuscula e a primeira
+      #  letra de cada palavra com 4 ou mais letras em maiúscula
+      $word =~ s/(?<!\p{L})(\p{L})(?=\p{L}\p{L}\p{L}+)/'['.uc($1).$1.']'/ge;
+      $word =~ s/^(\p{L})/'['.uc($1).$1.']'/ge;
+      push @taxonomy_rules, $word;
+    }
+    $RW_TAXONOMY_ROLE_LHS = join '|', @taxonomy_rules;
+  }else{
+    $RW_TAXONOMY_ROLE_LHS = '(?=a)b'; # falha sempre
+  }
+
   my $entities = {};
   my $self = bless {
     'dict' => Lingua::Jspell->new("port"),
     'names' => $names,
     'taxonomy' => $taxonomy,
     'entities' => $entities, #recognized entities
-    'rewrite_rules' => ($re_write ? $re_write : $rewrite_rules),
-    'recognizer' => NER::Recognizer->new($names, $taxonomy, $entities),
+    'rewrite_rules' => $re_write,
+    'recognizer' => NER::Recognizer->new($names, $taxonomy, $entities, {RW_TAXONOMY_ROLE_LHS=>$RW_TAXONOMY_ROLE_LHS}),
+
+    # possíveis cargos de pessoas, obtidos a partir da taxonomia, na chave pessoa
+    'RW_TAXONOMY_ROLE_LHS' => $RW_TAXONOMY_ROLE_LHS,
     }, $class;
 
   return $self;
@@ -206,10 +263,14 @@ sub recognize_line{
   eval $self->{rewrite_rules};
   print STDERR $@ if ($@);
 
-  debug("\n\nLINE====>$line<====\n\n");
-  $line = rewrite_taxonomy($line);
-  $line = rewrite_entities($line);
+  do{
+    $self->{NUMBER_OF_RECOGNITIONS} = 0;
+    $line = rewrite_entities($line);
+    print STDERR "\nREWROTE " . $self->{NUMBER_OF_RECOGNITIONS} . " TIMES\n";
+  }while($self->{NUMBER_OF_RECOGNITIONS} > 0);
   $line = loose_ends($line);
+
+  print STDERR "\n\nLINE: $line\n\n";
 
   $self->review_entities();
   return 1;
@@ -273,6 +334,21 @@ sub Normalize_line {
   return $line;
 }
 
+sub get_words_from_tree {
+  my ($tree) = @_;
+
+  my @words = ();
+
+  return @words unless( ref($tree) eq 'HASH' );
+
+  push @words, keys %$tree;
+  foreach my $key (keys %$tree) {
+    push @words, get_words_from_tree($tree->{$key});
+  }
+
+  return @words;
+}
+
 sub search_tree {
   my ($tree, $search) = @_;
 
@@ -296,6 +372,10 @@ sub debug {
 1;
 __END__
 # Below is stub documentation for your module. You'd better edit it!
+
+# NOTA:
+# No objeto abençoado, todas as chaves que estão em CAPS LOCK são muito
+# internas e não faz sentido serem acedidas de fora a nao ser para configuração
 
 =head1 NAME
 

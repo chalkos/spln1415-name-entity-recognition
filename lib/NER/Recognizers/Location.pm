@@ -44,6 +44,8 @@ sub rec_jspell_base {
     }
   }
 
+  return 0 if( ($sim+$nao) == 0 );
+
   my $confianca = $sim / ($sim+$nao) * 100;
   #$confianca = 85 if($confianca > 85);
 
@@ -62,7 +64,7 @@ sub rec_altas_directas {
     return 80 if( $str =~ $exp );
   }
 
-  return 0;
+  return 40;
 }
 
 1;

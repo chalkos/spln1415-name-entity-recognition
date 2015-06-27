@@ -23,14 +23,47 @@ sub runAll {
   return (
     $self->palavras_individuais($str),
     $self->fim_de_um_nome_ja_existente($str),
+    $self->inicio_de_str_corresponde_a_algo_que_nao_nome($str),
   );
 }
+
+sub inicio_de_str_corresponde_a_algo_que_nao_nome {
+  my ($self,$str) = @_;
+  my @partes = split ' ', $str;
+
+  my $offset = 0;
+  my @substrs;
+
+  # evitar entrar em ciclo
+  my (undef,undef,undef,$fun) = caller(5);
+  return 40 if( $fun =~ m/::inicio_de_str_corresponde_a_algo_que_nao_nome/ );
+
+  while( ($offset = index($str, ' ', $offset)) != -1 ) {
+    push @substrs, substr( $str, 0, $offset );
+    $offset++;
+  }
+
+  foreach my $substr (@substrs) {
+    print STDERR "checking \"$substr\"...\n";
+    my ($type,$lvl,$diff) = $self->re_recognize($substr);
+    if( $lvl >= 40 && $type ne 'person' ){
+      print STDERR "$substr is not a person!\n";
+      return 100-2*$lvl;
+    }
+  }
+  print STDERR "done checking!\n" if( scalar @substrs > 0 );
+
+  return 40;
+}
+
+
+
 
 sub fim_de_um_nome_ja_existente{
   my ($self, $str) = @_;
 
   foreach my $key (keys %{$self->{enti}}) {
-    if($key =~ /${str}$/ && $self->{entities}{$key}[0]{is_a} eq 'person'){
+    if($key =~ /${str}$/ && $self->{enti}{$key}[0]{is_a} eq 'person'){
       return 90;
     }
   }

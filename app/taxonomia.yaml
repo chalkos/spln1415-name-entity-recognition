@@ -22,6 +22,7 @@ pessoa:
       primeiro ministro: 1
       ministro: 1
       presidente: 1
+      presidente da república: 1
       deputado: 1
       rei: 1
    religioso:
