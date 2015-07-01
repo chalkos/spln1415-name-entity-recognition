@@ -13,6 +13,8 @@ use NER::Recognizers::Person;
 use NER::Recognizers::Location;
 use NER::Recognizers::Organization;
 use NER::Recognizers::Role;
+use NER::Recognizers::Date;
+use NER::Recognizers::Geography;
 
 ######################################
 
@@ -26,6 +28,7 @@ sub new{
     'rOrganization' => NER::Recognizers::Organization->new($names,$taxonomy,$entities,$more),
     'rRole' => NER::Recognizers::Role->new($names,$taxonomy,$entities,$more),
     'rDate' => NER::Recognizers::Date->new($names,$taxonomy,$entities,$more),
+    'rGeography' => NER::Recognizers::Geography->new($names,$taxonomy,$entities,$more),
     }, $class;
 
   $self->{rPerson}->set_parent_recognizer($self);
@@ -49,6 +52,7 @@ sub recognize {
     'organization' => 'rOrganization',
     'role' => 'rRole',
     'date' => 'rDate',
+    'geography' => 'rGeography',
   );
 
   my @confLvls;

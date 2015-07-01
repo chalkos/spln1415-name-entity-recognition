@@ -1,5 +1,6 @@
 --- #YAML:1.0
 
+# SPECIAL: pessoa is used to get people's roles
 pessoa:
    advogado: 1
    arquitecto: 1
@@ -33,6 +34,7 @@ pessoa:
       bispo: 1
       santo: 1
 
+# SPECIAL: organização is used to get organizations
 organização:
    aeroporto:
       aeroporto internacional: 1
@@ -65,7 +67,7 @@ organização:
       tribunal: 1
    teatro: 1
 
-geográfica:
+geografia:
    continente:
       europa: 1
       ásia: 1
@@ -111,21 +113,6 @@ evento:
       batalha: 1
       invasão: 1
       conquista: 1
-
-tempo:
-   mês:
-      janeiro: 1
-      fevereiro: 1
-      março: 1
-      abril: 1
-      maio: 1
-      junho: 1
-      julho: 1
-      agosto: 1
-      setembro: 1
-      outubro: 1
-      novembro: 1
-      dezembro: 1
 
 artefacto:
    documento: 1

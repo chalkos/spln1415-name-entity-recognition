@@ -29,6 +29,7 @@ my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 
 my $RW_TAXONOMY_ROLE_LHS = $self->{RW_TAXONOMY_ROLE_LHS};
 my $RW_TAXONOMY_ORGANIZATION_LHS = $self->{RW_TAXONOMY_ORGANIZATION_LHS};
+my $RW_TAXONOMY_GEOGRAPHY_LHS = $self->{RW_TAXONOMY_GEOGRAPHY_LHS};
 
 my $taxoBegin = '(o|a|ao|à|aos|ás)';
 my $taxoLink  = 'da|de|do|das|dos|Da|De|Do|Das|Dos';
@@ -59,21 +60,25 @@ RULES/m rewrite_entities
 ([Cc][aâ]mara\s[Mm]unicipal)=e=>$RWTEXT!! $self->recognize($1)
 ([Cc][aâ]mara(?!\s[Ff]otogr))=e=>$RWTEXT!! $self->recognize($1)
 
-(?<!\p{L})($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
-^($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
-(?<!\p{L})($RW_TAXONOMY_ROLE_LHS)$=e=>$RWTEXT!! $self->recognize($1)
-
-(?<!\p{L})($RW_TAXONOMY_ORGANIZATION_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
-^($RW_TAXONOMY_ORGANIZATION_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
-(?<!\p{L})($RW_TAXONOMY_ORGANIZATION_LHS)$=e=>$RWTEXT!! $self->recognize2($1)
-
-(?<!\p{L})($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
+([^\p{L}])($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$1.$RWTEXT!! $self->recognize($2)
 ^($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
-(?<!\p{L})($NER::Recognizers::Date::REGEX_DATE)$=e=>$RWTEXT!! $self->recognize($1)
-(?<!\p{L})((?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)(?!\p{L})=e=>$1.' '.$RWTEXT!! $self->recognize($2)
-(?<!\p{L})((?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)$=e=>$1.' '.$RWTEXT!! $self->recognize($2)
+([^\p{L}])($NER::Recognizers::Date::REGEX_DATE)$=e=>$1.$RWTEXT!! $self->recognize($2)
+([^\p{L}](?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)(?!\p{L})=e=>$1.' '.$RWTEXT!! $self->recognize($2)
+([^\p{L}](?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)$=e=>$1.' '.$RWTEXT!! $self->recognize($2)
 
 (\p{Lu}\p{Ll}+((\s(da|de|do|das|dos|Da|De|Do|Das|Dos)\s|\s)\p{Lu}\p{Ll}+)*)=e=>$RWTEXT!! $self->recognize($1)
+
+([^\p{L}])($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$1.$RWTEXT!! $self->recognize($2)
+^($RW_TAXONOMY_ROLE_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
+([^\p{L}])($RW_TAXONOMY_ROLE_LHS)$=e=>$1.$RWTEXT!! $self->recognize($2)
+
+([^\p{L}])($RW_TAXONOMY_ORGANIZATION_LHS)(?!\p{L})=e=>$1.$RWTEXT!! $self->recognize($2)
+^($RW_TAXONOMY_ORGANIZATION_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
+([^\p{L}])($RW_TAXONOMY_ORGANIZATION_LHS)$=e=>$1.$RWTEXT!! $self->recognize($2)
+
+([^\p{L}])($RW_TAXONOMY_GEOGRAPHY_LHS)(?!\p{L})=e=>$1.$RWTEXT!! $self->recognize2($2)
+^($RW_TAXONOMY_GEOGRAPHY_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize2($1)
+([^\p{L}])($RW_TAXONOMY_GEOGRAPHY_LHS)$=e=>$1.$RWTEXT!! $self->recognize2($2)
 
 (\p{Lu}\p{Ll}+(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
@@ -210,6 +215,7 @@ sub new{
 
   my $RW_TAXONOMY_ROLE_LHS = taxonomy_to_regex($taxonomy, 'pessoa');
   my $RW_TAXONOMY_ORGANIZATION_LHS = taxonomy_to_regex($taxonomy, 'organização');
+  my $RW_TAXONOMY_GEOGRAPHY_LHS = taxonomy_to_regex($taxonomy, 'geografia');
 
   my $entities = {};
   my $self = bless {
@@ -221,11 +227,13 @@ sub new{
     'recognizer' => NER::Recognizer->new($names, $taxonomy, $entities, {
       RW_TAXONOMY_ROLE_LHS=>$RW_TAXONOMY_ROLE_LHS,
       RW_TAXONOMY_ORGANIZATION_LHS=>$RW_TAXONOMY_ORGANIZATION_LHS,
+      RW_TAXONOMY_GEOGRAPHY_LHS=>$RW_TAXONOMY_GEOGRAPHY_LHS,
       }),
 
     # possíveis cargos de pessoas, obtidos a partir da taxonomia, na chave pessoa
-    'RW_TAXONOMY_ROLE_LHS' => $RW_TAXONOMY_ROLE_LHS,
-    'RW_TAXONOMY_ORGANIZATION_LHS' => $RW_TAXONOMY_ORGANIZATION_LHS,
+    RW_TAXONOMY_ROLE_LHS => $RW_TAXONOMY_ROLE_LHS,
+    RW_TAXONOMY_ORGANIZATION_LHS => $RW_TAXONOMY_ORGANIZATION_LHS,
+    RW_TAXONOMY_GEOGRAPHY_LHS => $RW_TAXONOMY_GEOGRAPHY_LHS,
     }, $class;
 
   return $self;
