@@ -31,9 +31,9 @@ sub new{
 }
 
 sub analyse {
-  my ($self, $text) = @_;
+  my ($self, $text, $original) = @_;
 
-  my @results = $self->runAll($text);
+  my @results = $self->runAll($text, $original);
 
   return sum(@results) / (scalar @results);
 }

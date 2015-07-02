@@ -15,6 +15,7 @@ use NER::Recognizers::Organization;
 use NER::Recognizers::Role;
 use NER::Recognizers::Date;
 use NER::Recognizers::Geography;
+use NER::Recognizers::Acronym;
 
 ######################################
 
@@ -29,6 +30,7 @@ sub new{
     'rRole' => NER::Recognizers::Role->new($names,$taxonomy,$entities,$more),
     'rDate' => NER::Recognizers::Date->new($names,$taxonomy,$entities,$more),
     'rGeography' => NER::Recognizers::Geography->new($names,$taxonomy,$entities,$more),
+    'rAcronym' => NER::Recognizers::Acronym->new($names,$taxonomy,$entities,$more),
     }, $class;
 
   $self->{rPerson}->set_parent_recognizer($self);
@@ -53,11 +55,12 @@ sub recognize {
     'role' => 'rRole',
     'date' => 'rDate',
     'geography' => 'rGeography',
+    'acronym' => 'rAcronym',
   );
 
   my @confLvls;
   foreach my $key (keys %check) {
-    push @confLvls, {type=>$key, lvl => $self->{$check{$key}}->analyse($text)};
+    push @confLvls, {type=>$key, lvl => $self->{$check{$key}}->analyse($text,$original)};
   }
 
   # ordenar por ordem decrescente de niveis de confiança
