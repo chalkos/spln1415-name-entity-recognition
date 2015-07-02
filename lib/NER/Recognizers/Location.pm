@@ -47,7 +47,10 @@ sub rec_jspell_base {
   return 0 if( ($sim+$nao) == 0 );
 
   my $confianca = $sim / ($sim+$nao) * 100;
-  #$confianca = 85 if($confianca > 85);
+
+  $confianca = $confianca * 1.5;
+  #$confianca = 90 if($confianca > 90);
+  $confianca = 85 if($confianca > 85);
 
   return $confianca;
 }

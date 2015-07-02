@@ -121,7 +121,7 @@ sub is_interesting{
 }
 
 sub recognize2{
-  print "~~~~organization: " . $_[1] . "\n";
+  print "~~~~debug: " . $_[1] . "\n";
   recognize(@_);
 }
 
@@ -280,6 +280,7 @@ sub recognize_line{
     $self->{NUMBER_OF_RECOGNITIONS} = 0;
     $line = rewrite_entities($line);
     print STDERR "\nREWROTE " . $self->{NUMBER_OF_RECOGNITIONS} . " TIMES\n";
+    print STDERR "\n\nLINE: $line\n\n";
   }while($self->{NUMBER_OF_RECOGNITIONS} > 0);
   $line = loose_ends($line);
 

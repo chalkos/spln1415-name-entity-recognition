@@ -116,7 +116,7 @@ sub palavras_individuais_localidade {
       return 30;
     }
   }
-  return 999;
+  return 20;
 }
 
 1;

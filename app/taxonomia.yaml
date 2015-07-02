@@ -95,6 +95,7 @@ geografia:
       cidade:
          sede de distrito: 1
       concelho: 1
+      município: 1
       distrito: 1
       freguesia: 1
       lugar: 1
