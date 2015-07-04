@@ -108,7 +108,7 @@ sub create_relations{
 
   while (scalar @_) {
     my ($x,$rel,$y) = (shift,shift,shift);
-    print STDOUT "$x -- $rel -- $y\n";
+    print STDERR "Relacionamento: $x -- $rel -- $y\n";
 
     $self->add_entity({ $x => { $rel => $y } });
   }
@@ -133,7 +133,7 @@ sub recognize{
 
   # adicionar à colecção de entidades
   $self->add_entity({
-    $str => { is_a => $tipo },
+    $str => { tipo => $tipo },
   });
 
   # definir o texto de substituição
@@ -150,7 +150,7 @@ sub is_in_taxonomy{
 
   $self->add_entity({
     $str => {
-      is_a => 'other'
+      tipo => 'other'
       },
     });
 
