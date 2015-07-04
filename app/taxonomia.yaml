@@ -41,6 +41,8 @@ organização:
    organização_histórica:
       dinastia: 1
       cortes: 1
+   comissão:
+      comissão europeia: 1
    pessoa colectiva: 1
    agrupamento musical: 1
    clube desportivo:

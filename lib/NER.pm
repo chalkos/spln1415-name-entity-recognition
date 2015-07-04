@@ -87,6 +87,7 @@ RULES find_relations
 ({role:([^\}]*?)} d[aeo] {organization:([^\}]*?)} (d[aeo]) {location:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($6,'é '.$2.' em',$3.' '.$4.' '.$5)
 ({organization:([^\}]*?)} {acronym:([^\}]*?)})=e=>$1 !! $self->create_relations($3,'refere-se a',$2,$2,'tem acrónimo',$3)
 ({acronym:([^\}]*?)} {organization:([^\}]*?)})=e=>$1 !! $self->create_relations($2,'refere-se a',$3,$3,'tem acrónimo',$2)
+({geography:([^\}]*?)} d[aeo] {location:([^\}]*?)})=e=>$1 !! $self->create_relations($2,'localização',$3)
 ENDRULES
 ################################################
 ################################################
@@ -94,7 +95,7 @@ ENDRULES
 REWRITE_RULES_BLOCK
 
 # o próximo comentário é uma tentativa de corrigir uma inconveniência do rewriterules
-# line 97
+# line 98
 
 # variável global com o texto de substituição no right hand side da regra
 our $RWTEXT;
