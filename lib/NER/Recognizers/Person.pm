@@ -10,7 +10,7 @@ $Data::Dumper::Sortkeys = 1;
 use Lingua::Jspell;
 
 
-use List::Util qw(sum min);
+use List::Util qw(sum max);
 
 require NER::Recognizers::Base;
 our @ISA = qw(NER::Recognizers::Base);
@@ -78,13 +78,12 @@ sub palavras_individuais {
 
   my @valores;
   foreach my $palavra (split /\s/,$str) {
-    my $min = min(
+    my $max = max(
       $self->palavras_individuais_hash_nomes($palavra),
       $self->palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro($palavra),
       $self->palavras_individuais_localidade($palavra),
     );
-    $min = 0 if($min == 999);
-    push @valores, $min;
+    push @valores, $max;
   }
 
   return sum(@valores) / (scalar @valores);
@@ -92,7 +91,7 @@ sub palavras_individuais {
 
 sub palavras_individuais_hash_nomes {
   my ($self, $palavra) = @_;
-  return defined($self->{name}->{ucfirst $palavra}) ? 70 : 999;
+  return defined($self->{name}->{ucfirst $palavra}) ? 70 : 20;
 }
 
 sub palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro {
@@ -104,7 +103,7 @@ sub palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro {
       return 70;
     }
   }
-  return 999;
+  return 20;
 }
 
 sub palavras_individuais_localidade {
