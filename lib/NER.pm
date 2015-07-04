@@ -17,7 +17,7 @@ $Data::Dumper::Sortkeys = 1;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw( Normalize_line search_tree get_words_from_tree);
+our @EXPORT_OK = qw( normalize_line search_tree get_words_from_tree);
 
 our $VERSION = '0.01';
 
@@ -85,6 +85,8 @@ RULES find_relations
 ({organization:([^\}]*?)} d[aeo] {location:([^\}]*?)})=e=>$1 !! $self->create_relations($2,'localização',$3)
 ({role:([^\}]*?)} d[aeo] {organization:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($4,'é '.$2.' de',$3,$3,'tem '.$2,$4)
 ({role:([^\}]*?)} d[aeo] {organization:([^\}]*?)} (d[aeo]) {location:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($6,'é '.$2.' em',$3.' '.$4.' '.$5)
+({organization:([^\}]*?)} {acronym:([^\}]*?)})=e=>$1 !! $self->create_relations($3,'refere-se a',$2,$2,'tem acrónimo',$3)
+({acronym:([^\}]*?)} {organization:([^\}]*?)})=e=>$1 !! $self->create_relations($2,'refere-se a',$3,$3,'tem acrónimo',$2)
 ENDRULES
 ################################################
 ################################################
@@ -237,7 +239,7 @@ sub recognize_string{
 # extracts entities from a line
 sub recognize_line{
   my $self = shift;
-  my $line = Normalize_line(shift);
+  my $line = normalize_line(shift);
 
   eval $self->{rewrite_rules};
   print STDERR $@ if ($@);
@@ -275,6 +277,10 @@ sub add_entity {
   }
 }
 
+sub merge_hashes {
+  my ($a, $b) = @_;
+}
+
 # tidy up after recognizing a line
 sub review_entities{
   my ($self) = @_;
@@ -310,7 +316,7 @@ sub entities{
 # Class methods
 
 # removes unuseful parts of a line
-sub Normalize_line {
+sub normalize_line {
   my $line = shift;
 
   $line =~ s/\{\}//g;
