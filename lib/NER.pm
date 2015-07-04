@@ -93,16 +93,11 @@ ENDRULES
 }
 REWRITE_RULES_BLOCK
 
+# o próximo comentário é uma tentativa de corrigir uma inconveniência do rewriterules
+# line 97
+
 # variável global com o texto de substituição no right hand side da regra
 our $RWTEXT;
-
-
-#TODO: estava a fazer isto para obter uma lista de palavras a partir da taxonomia
-#      para depois meter uma regra para cada no sitio onde diz
-#      no texto do rewriterules: ~~~taxonomy_rules~~~
-#      - além disso tenho que fazer um recognizer para funções de pessoas/trabalhos que depois
-#        apanhe as capturas do rewrite
-#      - depois tentar apanhar o lisboa em presidente da Câmara de Lisboa António Costa
 
 
 ####################################
@@ -267,18 +262,27 @@ sub recognize_line{
 sub add_entity {
   my ($self, $entity) = @_;
 
+  my $ent;
   foreach my $key (keys %$entity) {
     if( defined($self->{entities}{$key}) ){
-      my $existing = $self->{entities}{$key};
-      push @$existing, $entity->{$key};
+      $ent = $self->{entities}{$key};
     }else{
-      $self->{entities}{$key} = [$entity->{$key}];
+      $ent = $self->{entities}{$key} = {};
+    }
+
+    foreach my $subkey (keys %{$entity->{$key}}) {
+      if( defined $ent->{$subkey} ){
+        my $arr = $ent->{$subkey};
+
+        # ignorar se já existir no array
+        next if( grep { $_ eq $entity->{$key}{$subkey} } @$arr );
+
+        push @$arr, $entity->{$key}{$subkey};
+      }else{
+        $ent->{$subkey} = [$entity->{$key}{$subkey}];
+      }
     }
   }
-}
-
-sub merge_hashes {
-  my ($a, $b) = @_;
 }
 
 # tidy up after recognizing a line
@@ -296,17 +300,14 @@ sub review_entities{
 # otherwise use the array as is.
 sub entities{
   my $self = shift;
+  return $self->{entities};
 
+  # not used
   my $ent = {};
 
   foreach my $key (keys %{$self->{entities}}) {
     my $val = $self->{entities}{$key};
-
-    if( @$val == 1 ){
-      $ent->{$key} = $val->[0];
-    }else{
-      $ent->{$key} = $val;
-    }
+    $ent->{$key} = $val;
   }
 
   return $ent;

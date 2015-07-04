@@ -63,7 +63,7 @@ sub fim_de_um_nome_ja_existente{
   my ($self, $str) = @_;
 
   foreach my $key (keys %{$self->{enti}}) {
-    if($key =~ /${str}$/ && $self->{enti}{$key}[0]{is_a} eq 'person'){
+    if($key =~ /${str}$/ && grep {$_ eq 'person'} @{$self->{enti}{$key}{is_a}}){
       return 90;
     }
   }
