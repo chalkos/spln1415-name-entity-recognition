@@ -84,6 +84,7 @@ RULES find_relations
 ({role:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($3,'role',$2)
 ({organization:([^\}]*?)} d[aeo] {location:([^\}]*?)})=e=>$1 !! $self->create_relations($2,'localização',$3)
 ({role:([^\}]*?)} d[aeo] {organization:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($4,'é '.$2.' de',$3,$3,'tem '.$2,$4)
+({role:([^\}]*?)} d[aeo] {organization:([^\}]*?)} (d[aeo]) {location:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($6,'é '.$2.' em',$3.' '.$4.' '.$5)
 ENDRULES
 ################################################
 ################################################
