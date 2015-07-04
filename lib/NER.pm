@@ -110,7 +110,7 @@ sub create_relations{
     my ($x,$rel,$y) = (shift,shift,shift);
     print STDERR "Relacionamento: $x -- $rel -- $y\n";
 
-    $self->add_entity({ $x => { $rel => $y } });
+    $self->add_entity({ $x => { $rel => [$y] } });
   }
 
   return 0;
@@ -133,7 +133,7 @@ sub recognize{
 
   # adicionar à colecção de entidades
   $self->add_entity({
-    $str => { tipo => $tipo },
+    $str => { tipo => [$tipo] },
   });
 
   # definir o texto de substituição
@@ -150,7 +150,7 @@ sub is_in_taxonomy{
 
   $self->add_entity({
     $str => {
-      tipo => 'other'
+      tipo => ['other']
       },
     });
 
@@ -271,15 +271,17 @@ sub add_entity {
     }
 
     foreach my $subkey (keys %{$entity->{$key}}) {
+      my $arr;
+
       if( defined $ent->{$subkey} ){
-        my $arr = $ent->{$subkey};
-
-        # ignorar se já existir no array
-        next if( grep { $_ eq $entity->{$key}{$subkey} } @$arr );
-
-        push @$arr, $entity->{$key}{$subkey};
+        $arr = $ent->{$subkey};
       }else{
-        $ent->{$subkey} = [$entity->{$key}{$subkey}];
+        $arr = $ent->{$subkey} = [];
+      }
+
+      foreach my $elem (@{$entity->{$key}{$subkey}}) {
+        next if( grep { $_ eq $elem } @$arr );
+        push @$arr, $elem;
       }
     }
   }
@@ -288,29 +290,59 @@ sub add_entity {
 # tidy up after recognizing a line
 sub review_entities{
   my ($self) = @_;
+  my $ents = $self->{entities};
 
-  #TODO
-  # ajustar nomes, por exemplo:
-  # explicitar que as pessoas 'João Miguel Rodrigues', 'Miguel Rodrigues' e 'Rodrigues'
-  # são a mesma pessoa e juntar as informações que possam estar divididas pelas 3 entidades
+  # merge de coisas que aparecem em minuscula e maiuscula
+  # exemplo: meter o que está em 'câmara' em 'Câmara' e remover 'câmara'
+  foreach my $k (keys %$ents) {
+    if( $k =~ m/^\p{Ll}/ && defined $ents->{ucfirst $k} ){
+      $self->add_entity({
+        ucfirst($k) => $ents->{$k}
+      });
+      delete $ents->{$k};
+    }
+  }
+
+  # pessoas 'João Miguel Rodrigues', 'Miguel Rodrigues' e 'Rodrigues' podem ser a mesma
+  # como também podem não ser a mesma pessoa, não juntar informações
+  {
+    my @pessoas;
+    foreach my $k (keys %$ents) {
+      if( defined $ents->{$k}{tipo} && grep {$_ eq 'person'} @{$ents->{$k}{tipo}} ){
+        push @pessoas, $k;
+      }
+    }
+
+    foreach my $p (@pessoas) {
+      # quando $p é a parte final de outro nome
+      if( my @casos = grep {$_ =~ m/$p$/ && $_ ne $p} @pessoas ){
+        foreach my $caso (@casos) {
+          $self->add_entity({
+            $caso => {'alias' => [$p]},
+            $p => {'alias' => [$caso]},
+          });
+        }
+      }
+      # quando $p começa e acaba com as mesmas palavras que um outro nome
+      if( $p =~ m/\s\p{L}+\s/ ){
+        my ($inicio,$fim) = $p =~ m/^(\p{L}+)(?:\s\p{L}+)*\s(\p{L}+)$/;
+        if( my @casos = grep {$_ =~ m/^$inicio\s(\p{L}+\s)*$fim$/ && $_ ne $p} @pessoas ){
+          foreach my $caso (@casos) {
+            $self->add_entity({
+              $caso => {'alias' => [$p]},
+              $p => {'alias' => [$caso]},
+            });
+          }
+        }
+      }
+    }
+  };
 }
 
-# gets existing entities
-# if the entity has an array with only one element, use that element
-# otherwise use the array as is.
+# returns entities
 sub entities{
   my $self = shift;
   return $self->{entities};
-
-  # not used
-  my $ent = {};
-
-  foreach my $key (keys %{$self->{entities}}) {
-    my $val = $self->{entities}{$key};
-    $ent->{$key} = $val;
-  }
-
-  return $ent;
 }
 
 ####################################
