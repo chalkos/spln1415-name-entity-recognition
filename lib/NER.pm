@@ -30,6 +30,7 @@ my $rewrite_rules = << 'REWRITE_RULES_BLOCK';
 my $RW_TAXONOMY_ROLE_LHS = $self->{RW_TAXONOMY_ROLE_LHS};
 my $RW_TAXONOMY_ORGANIZATION_LHS = $self->{RW_TAXONOMY_ORGANIZATION_LHS};
 my $RW_TAXONOMY_GEOGRAPHY_LHS = $self->{RW_TAXONOMY_GEOGRAPHY_LHS};
+my $RW_TAXONOMY_OTHER = $self->{RW_TAXONOMY_OTHER};
 
 my $taxoBegin = '(o|a|ao|à|aos|ás)';
 my $taxoLink  = 'da|de|do|das|dos|Da|De|Do|Das|Dos';
@@ -38,20 +39,6 @@ my $word = '\p{L}+';
 
 ################################################
 ################################################
-RULES rewrite_taxonomy
-(?:[^\p{L}]|^)(\p{L}\p{Ll}+)=e=>"{taxo:$1}"!! $self->is_interesting($1)
-(?:[^\p{L}]|^){taxo:(.*?)}\s(\p{L}\p{Ll}+)=e=>"{taxo:$1 $2}"!! $self->is_interesting($1,$2)
-(?:[^\p{L}]|^)(\p{L}\p{Ll}+)\s{taxo:(.*?)}=e=>"{taxo:$1 $2}"!! $self->is_interesting($1,$2)
-(?:[^\p{L}]|^){taxo:(.*?)}\s($taxoLink)\s(\p{L}\p{Ll}+)=e=>"{taxo:$1 $2 $3}"!! $self->is_interesting($1,$2,$3)
-(?:[^\p{L}]|^)(\p{L}\p{Ll}+)\s($taxoLink)\s{taxo:(.*?)}=e=>"{taxo:$1 $2 $3}"!! $self->is_interesting($1,$2,$3)
-ENDRULES
-
-#((?<!\p{L})$word\s$word\s$word\s$word\s$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
-#((?<!\p{L})$word\s$word\s$word\s$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
-#((?<!\p{L})$word\s$word\s$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
-#((?<!\p{L})$word\s$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
-#((?<!\p{L})$word(?!\p{L}))=e=>$RWTEXT!! $self->recognize($1)
-
 # RewriteRules bug: ^ não funciona para delimitar inicio de string quando se usa /m. falha sempre
 # RewriteRules bug: lookbehinds positivos nao funcionam no inicio da expressão regular (com /m)
 RULES/m rewrite_entities
@@ -83,11 +70,14 @@ RULES/m rewrite_entities
 ([^\p{L}])($RW_TAXONOMY_GEOGRAPHY_LHS)(?!\p{L})=e=>$1.$RWTEXT!! $self->recognize($2)
 ^($RW_TAXONOMY_GEOGRAPHY_LHS)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
 ([^\p{L}])($RW_TAXONOMY_GEOGRAPHY_LHS)$=e=>$1.$RWTEXT!! $self->recognize($2)
-
-(\p{Lu}\p{Ll}+(\s\p{Lu}\p{Ll}+)*)=e=>'{entity:'.$1.'}'!! $self->is_an_entity($1)
 ENDRULES
 
-RULES loose_ends
+RULES/m other_stuff_from_taxonomy
+({.*?:.*?})=e=>$1
+
+([^\p{L}])($RW_TAXONOMY_OTHER)(?!\p{L})=e=>$1.$RWTEXT !! $self->is_in_taxonomy($2)
+^($RW_TAXONOMY_OTHER)(?!\p{L})=e=>$RWTEXT !! $self->is_in_taxonomy($1)
+([^\p{L}])($RW_TAXONOMY_OTHER)$=e=>$1.$RWTEXT !! $self->is_in_taxonomy($2)
 ENDRULES
 ################################################
 ################################################
@@ -108,21 +98,6 @@ our $RWTEXT;
 
 ####################################
 # Methods used by rewrite rules
-
-sub is_interesting{
-  my $self = shift;
-  my $str = join ' ', @_;
-
-  #debug("::::::::::::::::::::$str");
-
-  if( my $path = search_tree($self->{taxonomy}, $str) ){
-    #debug(" <------------- $path");
-  }
-
-  #debug("\n");
-
-  return 0;
-}
 
 sub recognize2{
   print "~~~~debug: " . $_[1] . "\n";
@@ -153,57 +128,20 @@ sub recognize{
   return 1;
 }
 
-sub is_an_entity{
-  return 0;
+sub is_in_taxonomy{
   my ($self, $str) = @_;
-
-  #debug("\n=====start IS_AN_ENTITY=====\n");
-
-  my $nomes_sim    = 0;
-  my $nomes_talvez = 0;
-  my $nomes_nao    = 0;
-
-  foreach my $n (split /\s/,$str) {
-    debug("   palavra: $n -> ");
-
-    # ver na análise morfológica
-    my @fea = $self->{dict}->fea($n);
-
-    my $palavras_invalidas = 0;
-    my $palavras_validas = 0;
-    foreach my $analise ( @fea ) {
-      if($analise->{CAT} =~ /nc|np/){
-        $palavras_validas++;
-      }else{
-        $palavras_invalidas++;
-      }
-    }
-
-    if($palavras_validas > 0){
-      $nomes_sim++;
-      debug("nome comum (morf)\n");
-    }elsif($palavras_invalidas > 0){
-      $nomes_nao++;
-      debug("não é nome comum (morf)\n");
-    }else{
-      $nomes_talvez++;
-      debug("não sei o que é isto (morf)\n");
-    }
-
-    if( $nomes_sim == 0 && $nomes_talvez == 0 && $nomes_nao > 0 ){
-      # se a primeira palavra que se detectou não corresponde a um nome, abortar
-      debug("=====IS_AN_ENTITY? NO=====\n");
-      return 0;
-    }
-  }
-
-  debug("=====IS_AN_ENTITY? YES=====\n");
 
   $self->add_entity({
     $str => {
-      is_a => 'entity'
+      is_a => 'other'
       },
     });
+
+  # definir o texto de substituição
+  $RWTEXT = '{other:'.$str.'}';
+
+  # incrementar o contador de reescritas com sucesso
+  $self->{NUMBER_OF_RECOGNITIONS}++;
 
   return 1;
 }
@@ -220,6 +158,9 @@ sub new{
   my $RW_TAXONOMY_ROLE_LHS = taxonomy_to_regex($taxonomy, 'pessoa');
   my $RW_TAXONOMY_ORGANIZATION_LHS = taxonomy_to_regex($taxonomy, 'organização');
   my $RW_TAXONOMY_GEOGRAPHY_LHS = taxonomy_to_regex($taxonomy, 'geografia');
+
+  my $RW_TAXONOMY_OTHER = taxonomy_to_regex($taxonomy,
+    grep { $_ ne 'pessoa' && $_ ne 'organização' && $_ ne 'geografia' } (keys %$taxonomy));
 
   my $entities = {};
   my $self = bless {
@@ -238,6 +179,7 @@ sub new{
     RW_TAXONOMY_ROLE_LHS => $RW_TAXONOMY_ROLE_LHS,
     RW_TAXONOMY_ORGANIZATION_LHS => $RW_TAXONOMY_ORGANIZATION_LHS,
     RW_TAXONOMY_GEOGRAPHY_LHS => $RW_TAXONOMY_GEOGRAPHY_LHS,
+    RW_TAXONOMY_OTHER => $RW_TAXONOMY_OTHER,
     }, $class;
 
   return $self;
@@ -286,7 +228,11 @@ sub recognize_line{
     print STDERR "\nREWROTE " . $self->{NUMBER_OF_RECOGNITIONS} . " TIMES\n";
     print STDERR "\n\nLINE: $line\n\n";
   }while($self->{NUMBER_OF_RECOGNITIONS} > 0);
-  $line = loose_ends($line);
+
+  do{
+    $self->{NUMBER_OF_RECOGNITIONS} = 0;
+    $line = other_stuff_from_taxonomy($line);
+  }while($self->{NUMBER_OF_RECOGNITIONS} > 0);
 
   print STDERR "\n\nLINE: $line\n\n";
 
@@ -368,21 +314,27 @@ sub get_words_from_tree {
 }
 
 sub taxonomy_to_regex {
-  my ($taxonomy, $key) = @_;
+  my $taxonomy = shift;
+  my $key;
+  my @words;
 
-  if( defined $taxonomy->{$key} ){
-    my @taxonomy_rules;
-    my @words = get_words_from_tree($taxonomy->{$key});
-    # o sort é para as palavras mais compridas estarem primeiro e assim
-    #  fazerem match antes de se experimentar as mais curtas
-    foreach my $word (sort { length $b <=> length $a } @words) {
-      $word = lc $word;
-      # meter uma versão com a primeira letra maiuscula e a primeira
-      #      letra de cada palavra com 4 ou mais letras em maiúscula
-      $word =~ s/(?<!\p{L})(\p{L})(?=\p{L}\p{L}\p{L}+)/'['.uc($1).$1.']'/ge;
-      $word =~ s/^(\p{L})/'['.uc($1).$1.']'/ge;
-      push @taxonomy_rules, $word;
-    }
+  while ($key = shift) {
+    push @words, get_words_from_tree($taxonomy->{$key});
+  }
+
+  my @taxonomy_rules;
+  # o sort é para as palavras mais compridas estarem primeiro e assim
+  #  fazerem match antes de se experimentar as mais curtas
+  foreach my $word (sort { length $b <=> length $a } @words) {
+    $word = lc $word;
+    # meter uma versão com a primeira letra maiuscula e a primeira
+    #      letra de cada palavra com 4 ou mais letras em maiúscula
+    $word =~ s/(?<!\p{L})(\p{L})(?=\p{L}\p{L}\p{L}+)/'['.uc($1).$1.']'/ge;
+    $word =~ s/^(\p{L})/'['.uc($1).$1.']'/ge;
+    push @taxonomy_rules, $word;
+  }
+
+  if( @taxonomy_rules ){
     return join '|', @taxonomy_rules;
   }else{
     return '^(?=y)w'; # falha sempre quase imediatamente
