@@ -83,6 +83,7 @@ ENDRULES
 RULES find_relations
 ({role:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($3,'role',$2)
 ({organization:([^\}]*?)} d[aeo] {location:([^\}]*?)})=e=>$1 !! $self->create_relations($2,'localização',$3)
+({role:([^\}]*?)} d[aeo] {organization:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($4,'é '.$2.' de',$3,$3,'tem '.$2,$4)
 ENDRULES
 ################################################
 ################################################
@@ -252,9 +253,9 @@ sub recognize_line{
     $line = other_stuff_from_taxonomy($line);
   }while($self->{NUMBER_OF_RECOGNITIONS} > 0);
 
-  print STDERR "\n\nLINE: $line\n\n";
-
-  find_relations($line =~ s/[^\w]+/ /);
+  (my $l = $line) =~ s/[^\w\:\{\}]+/ /g;
+  print STDOUT "\n\nSTRIPPED_LINE: $l\n\n";
+  find_relations($l);
 
   $self->review_entities();
   return 1;
