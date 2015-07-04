@@ -79,6 +79,11 @@ RULES/m other_stuff_from_taxonomy
 ^($RW_TAXONOMY_OTHER)(?!\p{L})=e=>$RWTEXT !! $self->is_in_taxonomy($1)
 ([^\p{L}])($RW_TAXONOMY_OTHER)$=e=>$1.$RWTEXT !! $self->is_in_taxonomy($2)
 ENDRULES
+
+RULES find_relations
+({role:([^\}]*?)} {person:([^\}]*?)})=e=>$1 !! $self->create_relations($3,'role',$2)
+({organization:([^\}]*?)} d[aeo] {location:([^\}]*?)})=e=>$1 !! $self->create_relations($2,'localização',$3)
+ENDRULES
 ################################################
 ################################################
 }
@@ -99,8 +104,21 @@ our $RWTEXT;
 ####################################
 # Methods used by rewrite rules
 
+sub create_relations{
+  my $self = shift;
+
+  while (scalar @_) {
+    my ($x,$rel,$y) = (shift,shift,shift);
+    print STDOUT "$x -- $rel -- $y\n";
+
+    $self->add_entity({ $x => { $rel => $y } });
+  }
+
+  return 0;
+}
+
 sub recognize2{
-  print "~~~~debug: " . $_[1] . "\n";
+  print STDERR "~~~~debug: " . $_[1] . "\n";
   recognize(@_);
 }
 
@@ -235,6 +253,8 @@ sub recognize_line{
   }while($self->{NUMBER_OF_RECOGNITIONS} > 0);
 
   print STDERR "\n\nLINE: $line\n\n";
+
+  find_relations($line =~ s/[^\w]+/ /);
 
   $self->review_entities();
   return 1;
