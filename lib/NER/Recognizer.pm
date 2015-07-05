@@ -9,6 +9,8 @@ use Data::Dumper;
 $Data::Dumper::Sortkeys = 1;
 use Lingua::Jspell;
 
+use NER::Logger;
+
 use NER::Recognizers::Person;
 use NER::Recognizers::Location;
 use NER::Recognizers::Organization;
@@ -18,7 +20,6 @@ use NER::Recognizers::Geography;
 use NER::Recognizers::Acronym;
 
 ######################################
-
 sub new{
   my ($class,$names,$taxonomy,$entities,$more) = @_;
   my $self = bless {
@@ -67,10 +68,10 @@ sub recognize {
   my @sortedLvls = sort { $b->{lvl} <=> $a->{lvl} } @confLvls;
 
   if( $sortedLvls[0]->{lvl} >= 40 ){
-    print STDERR 'REC: "' . $text . '" is ' . $sortedLvls[0]->{type} .
+    TRACE('REC: "' . $text . '" is ' . $sortedLvls[0]->{type} .
       '(' . $sortedLvls[0]->{lvl}.'%) or ' . $sortedLvls[1]->{type} .
       '(' . $sortedLvls[1]->{lvl}.'%) or ' . $sortedLvls[2]->{type} .
-      '(' . $sortedLvls[2]->{lvl}.'%).' . "\n";
+      '(' . $sortedLvls[2]->{lvl}.'%).' . "\n");
   }
 
   return (

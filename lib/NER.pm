@@ -14,6 +14,8 @@ require NER::Recognizers::Date;
 use Data::Dumper;
 $Data::Dumper::Sortkeys = 1;
 
+use NER::Logger;
+
 require Exporter;
 
 our @ISA = qw(Exporter);
@@ -109,7 +111,7 @@ sub create_relations{
 
   while (scalar @_) {
     my ($x,$rel,$y) = (shift,shift,shift);
-    print STDERR "Relacionamento: $x -- $rel -- $y\n";
+    TRACE("Relacionamento: $x -- $rel -- $y\n");
 
     $self->add_entity({ $x => { $rel => [$y] } });
   }
@@ -118,7 +120,7 @@ sub create_relations{
 }
 
 sub recognize2{
-  print STDERR "~~~~debug: " . $_[1] . "\n";
+  TRACE("~~~~debug: " . $_[1] . "\n");
   recognize(@_);
 }
 
@@ -171,7 +173,6 @@ sub new{
   my ($class, $names, $taxonomy, $re_write) = @_;
 
   $re_write = $rewrite_rules if( !defined $re_write || (defined $re_write && !@$re_write) );
-  #print STDERR Dumper($re_write);
 
   my $RW_TAXONOMY_ROLE_LHS = taxonomy_to_regex($taxonomy, 'pessoa');
   my $RW_TAXONOMY_ORGANIZATION_LHS = taxonomy_to_regex($taxonomy, 'organização');
@@ -238,13 +239,13 @@ sub recognize_line{
   my $line = normalize_line(shift);
 
   eval $self->{rewrite_rules};
-  print STDERR $@ if ($@);
+  TRACE($@) if ($@);
 
   do{
     $self->{NUMBER_OF_RECOGNITIONS} = 0;
     $line = rewrite_entities($line);
-    print STDERR "\nREWROTE " . $self->{NUMBER_OF_RECOGNITIONS} . " TIMES\n";
-    print STDERR "\n\nLINE: $line\n\n";
+    TRACE("\nREWROTE " . $self->{NUMBER_OF_RECOGNITIONS} . " TIMES\n");
+    TRACE("\n\nLINE: $line\n\n");
   }while($self->{NUMBER_OF_RECOGNITIONS} > 0);
 
   do{
@@ -253,7 +254,7 @@ sub recognize_line{
   }while($self->{NUMBER_OF_RECOGNITIONS} > 0);
 
   (my $l = $line) =~ s/[^\w\:\{\}]+/ /g;
-  print STDOUT "\n\nSTRIPPED_LINE: $l\n\n";
+  TRACE("\n\nSTRIPPED_LINE: $l\n\n");
   find_relations($l);
 
   $self->review_entities();
@@ -416,11 +417,6 @@ sub search_tree {
   }
 
   return '';
-}
-
-sub debug {
-  my $str = shift;
-  #print STDERR $str;
 }
 
 1;

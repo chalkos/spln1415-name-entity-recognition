@@ -9,7 +9,7 @@ use Data::Dumper;
 $Data::Dumper::Sortkeys = 1;
 use Lingua::Jspell;
 
-
+use NER::Logger;
 use List::Util qw(sum max);
 
 require NER::Recognizers::Base;
@@ -44,14 +44,14 @@ sub inicio_de_str_corresponde_a_algo_que_nao_nome {
   }
 
   foreach my $substr (@substrs) {
-    print STDERR "checking \"$substr\"...\n";
+    TRACE("checking \"$substr\"...\n");
     my ($type,$lvl,$diff) = $self->re_recognize($substr);
     if( $lvl >= 40 && $type ne 'person' ){
-      print STDERR "$substr is not a person!\n";
+      TRACE("$substr is not a person!\n");
       return 100-2*$lvl;
     }
   }
-  print STDERR "done checking!\n" if( scalar @substrs > 0 );
+  TRACE("done checking!\n") if( scalar @substrs > 0 );
 
   return 40;
 }

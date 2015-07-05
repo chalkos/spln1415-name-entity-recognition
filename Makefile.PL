@@ -6,7 +6,7 @@ use ExtUtils::MakeMaker;
 sub MY::postamble {
   return <<'END_OF_RULE';
 application:
-	perl -I ./lib app/Application.pl
+	perl -I ./lib -I ./lib/NER -I ./lib/NER/Recognizers app/Application.pl
 END_OF_RULE
 }
 
