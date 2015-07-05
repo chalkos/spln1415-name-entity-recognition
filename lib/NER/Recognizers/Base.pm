@@ -34,8 +34,11 @@ sub analyse {
   my ($self, $text, $original) = @_;
 
   my @results = $self->runAll($text, $original);
+  my $zeroes = scalar grep {$_ == 0} @results;
+  my $count = (scalar @results)-$zeroes;
 
-  return sum(@results) / (scalar @results);
+  return 0 if($count == 0);
+  return sum(@results) / $count;
 }
 
 # obter o objecto do tipo NER::Recognizer que criou este recognizer

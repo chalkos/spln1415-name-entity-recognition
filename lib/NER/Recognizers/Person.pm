@@ -36,7 +36,7 @@ sub inicio_de_str_corresponde_a_algo_que_nao_nome {
 
   # evitar entrar em ciclo
   my (undef,undef,undef,$fun) = caller(5);
-  return 40 if( $fun =~ m/::inicio_de_str_corresponde_a_algo_que_nao_nome/ );
+  return 0 if( $fun =~ m/::inicio_de_str_corresponde_a_algo_que_nao_nome/ );
 
   while( ($offset = index($str, ' ', $offset)) != -1 ) {
     push @substrs, substr( $str, 0, $offset );
@@ -48,16 +48,16 @@ sub inicio_de_str_corresponde_a_algo_que_nao_nome {
     my ($type,$lvl,$diff) = $self->re_recognize($substr);
     if( $lvl >= 40 && $type ne 'person' ){
       TRACE("$substr is not a person!\n");
-      return 100-2*$lvl;
+      my $ret = 100-2*$lvl;
+      return 40 if( $ret > 40 );
+      return 1 if($ret < 1);
+      return $ret;
     }
   }
   TRACE("done checking!\n") if( scalar @substrs > 0 );
 
-  return 40;
+  return 0;
 }
-
-
-
 
 sub fim_de_um_nome_ja_existente{
   my ($self, $str) = @_;
@@ -67,7 +67,7 @@ sub fim_de_um_nome_ja_existente{
       return 90;
     }
   }
-  return 40;
+  return 0;
 }
 
 sub palavras_individuais {
@@ -77,21 +77,30 @@ sub palavras_individuais {
   $str =~ s/\s(da|de|do|das|dos)\s/ /g;
 
   my @valores;
+  my $count_without_zeroes;
   foreach my $palavra (split /\s/,$str) {
-    my $max = max(
+    my @vals_pal = (
       $self->palavras_individuais_hash_nomes($palavra),
       $self->palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro($palavra),
-      $self->palavras_individuais_localidade($palavra),
+      #$self->palavras_individuais_localidade($palavra),
     );
-    push @valores, $max;
+
+    $count_without_zeroes = (scalar @vals_pal)-(scalar grep {$_ == 0} @vals_pal);
+
+    if( $count_without_zeroes != 0 ){
+      push @valores, sum(@vals_pal) / $count_without_zeroes;
+    }
   }
 
-  return sum(@valores) / (scalar @valores);
+  $count_without_zeroes = (scalar @valores)-(scalar grep {$_ == 0} @valores);
+
+  return 0 if($count_without_zeroes == 0);
+  return sum(@valores) / $count_without_zeroes;
 }
 
 sub palavras_individuais_hash_nomes {
   my ($self, $palavra) = @_;
-  return defined($self->{name}->{ucfirst $palavra}) ? 70 : 20;
+  return defined($self->{name}->{ucfirst $palavra}) ? 70 : 0;
 }
 
 sub palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro {
@@ -103,7 +112,7 @@ sub palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro {
       return 70;
     }
   }
-  return 20;
+  return 0;
 }
 
 sub palavras_individuais_localidade {
@@ -112,10 +121,10 @@ sub palavras_individuais_localidade {
   my @fea = $self->{dict}->fea($palavra);
   foreach my $analise ( @fea ) {
     if( $analise->{CAT} =~ /np/ && defined($analise->{SEM}) && $analise->{SEM} =~ /^(cid|ter|country)$/ ){
-      return 30;
+      return 0;
     }
   }
-  return 20;
+  return 0;
 }
 
 1;

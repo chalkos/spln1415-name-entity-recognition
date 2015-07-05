@@ -56,7 +56,7 @@ sub rec_especificas {
   return 90 if( $str =~ m/$REGEX_DATE/ );
   return 70 if( $str =~ m/$REGEX_YEAR/ );
 
-  return 0;
+  return 1;
 }
 
 1;
