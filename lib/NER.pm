@@ -421,28 +421,60 @@ sub search_tree {
 
 1;
 __END__
-# Below is stub documentation for your module. You'd better edit it!
 
-# NOTA:
-# No objeto abençoado, todas as chaves que estão em CAPS LOCK são muito
-# internas e não faz sentido serem acedidas de fora a nao ser para configuração
+=encoding utf8
 
 =head1 NAME
 
-NER - Perl extension for blah blah blah
+NER - Name Entity Recognition (para Portguês)
 
 =head1 SYNOPSIS
 
   use NER;
-  blah blah blah
+  my $recognizer = NER->new($names,$taxonomy);
+
+  # read text from a string
+  $recognizer->recognize_string(STDIN);
+
+  #OR
+  # read text from file
+  $recognizer->recognize_file($some_text_file);
+
+  #OR
+  # read text from STDIN
+  $recognizer->recognize_file_handle(STDIN);
+
+  my $entities = $recognizer->entities;
 
 =head1 DESCRIPTION
 
-Stub documentation for NER, created by h2xs. It looks like the
-author of the extension was negligent enough to leave the stub
-unedited.
+O NER está dividido em vários módulos:
 
-Blah blah blah.
+=over
+
+=item * B<NER>
+
+Módulo base, itera sobre o texto, submetendo várias possíveis entidades para serem identificadas pelo NER::Recognizer.
+
+=item * B<NER::Recognizer>
+
+Sub-módulo que gere a identificação de entidades no texto.
+
+=item * B<NER::Logger>
+
+Sub-módulo para facilitar a activação/desactivação de texto de debug.
+
+=item * B<NER::Recognizers::*> (excepto NER::Recognizers::Base)
+
+Sub-módulos que indicam a probabilidade de uma possível entidade ser de um tipo específico (uma pessoa ou localização, por exemplo).
+
+Todos estes módulos são do tipo NER::Recognizers::Base (usando @ISA).
+
+=item * B<NER::Recognizers::Base>
+
+Sub-módulo que não é usado directamente para reconhecer texto, mas tem métodos comuns a todos os outros reconhecedores.
+
+=back
 
 =head2 EXPORT
 
