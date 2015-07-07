@@ -11,5 +11,5 @@ our @EXPORT = qw(TRACE);
 
 # comment the print line to suppress TRACE messages
 sub TRACE{
-  print STDERR (shift);
+  #print STDERR (shift);
 }

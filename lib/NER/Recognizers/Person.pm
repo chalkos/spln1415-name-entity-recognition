@@ -18,11 +18,11 @@ our @ISA = qw(NER::Recognizers::Base);
 ######################################
 
 sub runAll {
-  my ($self,$str) = @_;
+  my ($self,$str,$original) = @_;
 
   return (
     $self->palavras_individuais($str),
-    $self->fim_de_um_nome_ja_existente($str),
+    $self->fim_de_um_nome_ja_existente($original),
     $self->inicio_de_str_corresponde_a_algo_que_nao_nome($str),
   );
 }
