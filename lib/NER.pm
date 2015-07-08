@@ -19,7 +19,7 @@ use NER::Logger;
 require Exporter;
 
 our @ISA = qw(Exporter);
-our @EXPORT_OK = qw( normalize_line search_tree get_words_from_tree);
+our @EXPORT_OK = qw(normalize_line get_words_from_tree taxonomy_to_regex);
 
 our $VERSION = '0.01';
 
@@ -355,6 +355,7 @@ sub normalize_line {
   my $line = shift;
 
   $line =~ s/\{\}//g;
+  $line =~ s/[\_]+/ /g;
   $line =~ s/\s+/ /g;
   #join ' ', (split(/[^\w0-9()]+/, shift));
 
@@ -404,31 +405,16 @@ sub taxonomy_to_regex {
   }
 }
 
-sub search_tree {
-  my ($tree, $search) = @_;
-
-  return '' unless( ref($tree) eq 'HASH' );
-
-  return $search if( defined($tree->{$search}) && $tree->{$search} == 1 );
-
-  foreach my $key (keys %$tree) {
-    my $result = search_tree( $tree->{$key}, $search );
-    return "$key, $result" if($result);
-  }
-
-  return '';
-}
-
 1;
 __END__
 
 =encoding utf8
 
-=head1 NAME
+=head1 NOME
 
-NER - Name Entity Recognition (para Portguês)
+NER - Name Entity Recognition, reconhecedor de nomes e entidades para textos em Portguês
 
-=head1 SYNOPSIS
+=head1 SINOPSE
 
   use NER;
   my $recognizer = NER->new($names,$taxonomy);
@@ -446,7 +432,11 @@ NER - Name Entity Recognition (para Portguês)
 
   my $entities = $recognizer->entities;
 
-=head1 DESCRIPTION
+=head1 DESCRIÇÃO
+
+O Name Entity Recognition permite reconhecer entidades presentes em textos escritos em linguagem natural sem anotações. Para auxiliar esse reconhecimento, pode ser fornecida uma lista de nomes/apelidos e uma taxonomia (organizada em árvore). Além destes, o módulo usa também um dicionário jspell da língua portuguesa.
+
+Ao reconhecer um texto, o NER encontra palavras e expressões com grande probabilidade de serem entidades e submete-as a um sub-módulo (NER::Recognizer) que as tenta identificar como algum tipo de entidade (pessoa, localização, etc). As entidades reconhecidas são guardadas e o texto original é anotado. Por fim as entidades reconhecidas e o texto anotado são revistos à procura de possíveis relações entre as entidades.
 
 O NER está dividido em vários módulos:
 
@@ -476,11 +466,201 @@ Sub-módulo que não é usado directamente para reconhecer texto, mas tem métod
 
 =back
 
+=head2 ESTRUTURAS DE DADOS
+
+=head3 ESTRUTURA EM ÁRVORE
+
+Sempre que forem referidas estruturas em árvore, são estruturas recursivas formadas por várias hashes, em que cada nó é uma hash identificada por uma chave da hash do nó imediatamente acima e cada folha é um valor identificado por uma chave da hash do nó que a suporta.
+
+Demonstração:
+
+  {
+    'um' => 1,
+    'três' => {
+      'quatro' => 'abc',
+      'cinco' => {
+        'seis' => 6,
+        'sete' => 7
+      }
+    }
+    'dois' => undef
+  }
+
+Corresponde à árvore:
+
+      < raiz >
+     /   |    \
+    /    |     \
+  um   dois    três
+   |     |     |   \
+   1  undef  cinco quatro
+            /   \      \
+          seis  sete   abc
+           |      |
+           6      7
+
+=head3 ESTRUTURA DE NOMES
+
+Lista de nomes como chaves de uma hash. O reconhecedor funciona com uma hash vazia, mas terá piores resultados.
+
+A lista é uma hash com o seguinte formato:
+
+  {
+    "António"=>"nome",
+    "Augusto"=>"misto"
+    "José"=>"nome",
+    "Martinho"=>"misto",
+    "Silva"=>"apelido"
+  }
+
+Em que "nome", "apelido" e "misto" significam que a palavra é usada como primeiro nome, como apelido ou ambos, respectivamente.
+
+=head3 ESTRUTURA DA TAXONOMIA
+
+Uma Árvore de profundidade variável na qual as folhas são ignoradas. Apenas as chaves das hashes são usadas como entidades no reconhecimento de texto.
+
+Existem algumas chaves especiais cujas chaves (das hashes) na árvore descendente são associadas a determinados tipos de entidade:
+
+=over
+
+=item * B<'pessoa'> contém elementos textuais do tipo 'I<role>', que representam profissões ou cargos que uma pessoa possa ter;
+
+=item * B<'organização'> contém elementos textuais do tipo 'I<organization>', que representam instituições, organizações e outras entidades colectivas;
+
+=item * B<'geografia'> contém elementos textuais do tipo 'I<geography>', que representam entidades identificativas de elementos geográficos (exemplo: rio, vale, montanha);
+
+=item * B<'...'> todos os outros elementos textuais na taxonomia são de tipo desconhecido e ficam associados ao tipo 'I<other>'. Pode.
+
+=back
+
+Um exemplo real (resumido):
+
+  {
+    'pessoa' => {
+      'advogado' => 1,
+      'arquitecto' => 1,
+      'atleta' => {
+        'futebolista' => 1
+      },
+      'escritor' => {
+        'poeta' => 1
+      }
+    },
+
+    'organização' => {
+      'organização_histórica' => {
+        'dinastia' => 1,
+        'cortes' => 1
+      },
+      'comissão' => {
+        'comissão europeia' => 1
+      }
+    },
+
+    'outro' => {
+      'signo' => 1,
+      'regulamento geral de taxas' => 1
+    },
+
+    'ainda mais um' => {
+      'mosca' => 1
+    }
+  }
+
+De forma detalhada, tem-se que os elementos 'advogado', 'arquitecto', 'atleta', 'futebolista', 'escritor' e 'poeta' são do tipo 'I<role>'.
+
+Os elementos 'dinastia', 'cortes', 'comissão' e 'comissão europeia' são do tipo 'I<organization>'. Note-se que 'organização_histórica' é um elemento, mas nunca será reconhecido porque todos os '_' são removidos aquando da normalização do texto.
+
+Os elementos 'signo', 'mosca' e 'regulamento geral de taxas' são do tipo 'I<other>'. Como demonstrado, os elementos do tipo 'I<other>' não precisam de estar todos aninhados na hash correspondente a uma chave principal da Árvore (no exemplo estão nas chaves 'outro' e 'ainda mais um').
+
+As chaves principais da Árvore (no exemplo são 'pessoa', 'organização', 'outro' e 'ainda mais um') não são considerados elementos a reconhecer. Caso se queira reconhecer o texto 'pessoa' como uma entidade é preciso que esta seja adicionada aninhada na hash correspondente a uma chave principal da Árvore.
+
+Na maior parte dos casos, não há necessidade de incluir expressões duplicadas na taxonomia que apenas difiram em termos de maiúsculas e minúsculas. Ao ler os valores da taxonomia, estes são alterados de forma a que, por exemplo, o elemento 'regulamento geral de taxas' permita capturar a entidade 'Regulamento Geral de Taxas' e 'regulamento Geral de Taxas', mas não 'regulamento geral De taxas'. Para mais especificidade, consultar a descrição da subrotina B<taxonomy_to_regex>.
+
+=head1 SUBROTINAS
+
 =head2 EXPORT
 
 None by default.
 
+=head2 EXPORT_OK
 
+=over
+
+=item * B<normalize_line>
+
+Remove chavetas e agrupa todos os conjuntos de um ou mais caracteres de whitespace num único espaço.
+
+Esta subrotina é usada para normalizar cada linha antes de ser interpretada.
+
+=item * B<get_words_from_tree>
+
+Obtém todas as chaves existentes numa estrutura lógica de árvore composta por várias hashes.
+
+Exemplo: Dada a árvore
+
+  {
+    'um' => 'esta string não',
+    'três' => {
+      'quatro' => 4,
+      'cinco' => ['estas', 'strings', 'também', 'não']
+    }
+    'dois' => undef
+  }
+
+A subrotina retorna
+
+  qw(um dois três quatro cinco)
+
+=item * B<taxonomy_to_regex>
+
+TODO
+
+=back
+
+=head2 Instance methods
+
+=over
+
+=item * B<new>
+
+Cria uma nova instância de NER, com todos os elementos necessários ao reconhecimento de texto.
+
+my ($class, $names, $taxonomy, $re_write) = @_; TODO
+
+B<Argumentos:>
+
+=over 2
+
+=item 1. Uma L<estrutura de nomes|/"ESTRUTURA DE NOMES">
+
+=item 2. Uma L<estrutura da taxonomia|/"ESTRUTURA DA TAXONOMIA">
+
+=item 3. (opcional) Diferentes regras de re-escrita que substituiem as predefinidas
+
+Estas regras de re-escrita devem já ter sido processadas pelo módulo I<Text::RewriteRules> e devem estar em formato de string preparada para ser submetida a um I<eval>.
+
+Todas as regras definidas no REWRITE_RULES_BLOCK deste módulo têm de estar definidas neste argumento.
+
+=back
+
+=back
+
+=head1 Random stuff
+
+* um objecto NER permite reconhecer vários textos e no final dá todas as entidades encontradas em todos os textos (por causa da forma como algumas entidades são reconhecidas, isto pode significar resultados diferentes conforme a ordem de reconhecimento dos textos).
+
+* como gerar esta documentação e como correr a aplicação
+
+* dependências
+
+* TODO
+
+* tudo o que está aqui em baixo
+
+                 |
+                \ /
+                 V
 
 =head1 SEE ALSO
 

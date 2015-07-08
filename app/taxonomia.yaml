@@ -70,6 +70,7 @@ organização:
       tribunal: 1
    teatro: 1
 
+# SPECIAL: geografia is used to get geography-related entities
 geografia:
    continente:
       europa: 1
