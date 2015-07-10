@@ -414,6 +414,9 @@ __END__
 
 NER - Name Entity Recognition, reconhecedor de nomes e entidades para textos em Portguês
 
+
+
+
 =head1 SINOPSE
 
   use NER;
@@ -431,6 +434,9 @@ NER - Name Entity Recognition, reconhecedor de nomes e entidades para textos em 
   $recognizer->recognize_file_handle(STDIN);
 
   my $entities = $recognizer->entities;
+
+
+
 
 =head1 DESCRIÇÃO
 
@@ -575,7 +581,13 @@ Os elementos 'signo', 'mosca' e 'regulamento geral de taxas' são do tipo 'I<oth
 
 As chaves principais da Árvore (no exemplo são 'pessoa', 'organização', 'outro' e 'ainda mais um') não são considerados elementos a reconhecer. Caso se queira reconhecer o texto 'pessoa' como uma entidade é preciso que esta seja adicionada aninhada na hash correspondente a uma chave principal da Árvore.
 
-Na maior parte dos casos, não há necessidade de incluir expressões duplicadas na taxonomia que apenas difiram em termos de maiúsculas e minúsculas. Ao ler os valores da taxonomia, estes são alterados de forma a que, por exemplo, o elemento 'regulamento geral de taxas' permita capturar a entidade 'Regulamento Geral de Taxas' e 'regulamento Geral de Taxas', mas não 'regulamento geral De taxas'. Para mais especificidade, consultar a descrição da subrotina B<taxonomy_to_regex>.
+Na maior parte dos casos, não há necessidade de incluir expressões duplicadas na taxonomia que apenas difiram em termos de maiúsculas e minúsculas. Ao ler os valores da taxonomia, estes são alterados de forma a que, por exemplo, o elemento 'regulamento geral de taxas' permita capturar a entidade 'Regulamento Geral de Taxas' e 'regulamento Geral de Taxas', mas não 'regulamento geral De taxas'. Para mais especificidade, consultar a descrição da subrotina L<taxonomy_to_regex|/"taxonomy_to_regex">.
+
+
+
+
+
+
 
 =head1 SUBROTINAS
 
@@ -585,15 +597,13 @@ None by default.
 
 =head2 EXPORT_OK
 
-=over
-
-=item * B<normalize_line>
+=head3 normalize_line
 
 Recebe um argumento: uma linha. Remove chavetas e agrupa todos os conjuntos de um ou mais caracteres de whitespace num único espaço.
 
 Esta subrotina é usada para normalizar cada linha antes de ser interpretada.
 
-=item * B<get_words_from_tree>
+=head3 get_words_from_tree
 
 Obtém todas as chaves existentes numa estrutura lógica de árvore composta por várias hashes.
 
@@ -612,7 +622,7 @@ A subrotina retorna
 
   qw(um dois três quatro cinco)
 
-=item * B<taxonomy_to_regex>
+=head3 taxonomy_to_regex
 
 Recebe uma taxonomia e uma ou mais chaves. Dá como resultado uma expresão regular que pode ser utilizada para capturar qualquer um dos elementos na taxonomia (sem contar com as chaves passadas como argumento).
 
@@ -640,15 +650,11 @@ Especificamente, a primeira letra da string e a primeira letra de todas as palav
 
 =back
 
-=head2 Instance methods
+=head2 INSTANCE METHODS
 
-=over
-
-=item * B<new>
+=head3 new
 
 Cria uma nova instância de NER, com todos os elementos necessários ao reconhecimento de texto.
-
-my ($class, $names, $taxonomy, $re_write) = @_; TODO
 
 B<Argumentos:>
 
@@ -666,7 +672,27 @@ Todas as regras definidas no REWRITE_RULES_BLOCK deste módulo têm de estar def
 
 =back
 
-=back
+Neste método são criadas as expressões regulares a partir da taxonomia (usando L<taxonomy_to_regex|/"taxonomy_to_regex">) que são usadas no RewriteRules e nos Recognizers. São criadas as expressões regulares para os tipos C<'role'>, C<'organization'>, C<'geography'> e C<'other'>.
+
+É também inicializado um dicionário Jspell de Português e um novo objecto do tipo C<Recognizer>.
+
+
+=head3 recognize_file
+
+
+
+=head3 recognize_file_handle
+
+
+
+=head3 recognize_string
+
+
+
+=head3 recognize_line
+
+
+
 
 =head1 Random stuff
 
