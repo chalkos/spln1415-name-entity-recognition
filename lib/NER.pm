@@ -393,8 +393,8 @@ sub taxonomy_to_regex {
     $word = lc $word;
     # meter uma versão com a primeira letra maiuscula e a primeira
     #      letra de cada palavra com 4 ou mais letras em maiúscula
-    $word =~ s/(?<!\p{L})(\p{L})(?=\p{L}\p{L}\p{L}+)/'['.uc($1).$1.']'/ge;
-    $word =~ s/^(\p{L})/'['.uc($1).$1.']'/ge;
+    $word =~ s/(?<!\p{L})(\p{L})(?=\p{L}\p{L}\p{L}+)/'['.uc($1).lc($1).']'/ge;
+    $word =~ s/^(\p{L})/'['.uc($1).lc($1).']'/ge;
     push @taxonomy_rules, $word;
   }
 
@@ -589,7 +589,7 @@ None by default.
 
 =item * B<normalize_line>
 
-Remove chavetas e agrupa todos os conjuntos de um ou mais caracteres de whitespace num único espaço.
+Recebe um argumento: uma linha. Remove chavetas e agrupa todos os conjuntos de um ou mais caracteres de whitespace num único espaço.
 
 Esta subrotina é usada para normalizar cada linha antes de ser interpretada.
 
@@ -614,7 +614,29 @@ A subrotina retorna
 
 =item * B<taxonomy_to_regex>
 
-TODO
+Recebe uma taxonomia e uma ou mais chaves. Dá como resultado uma expresão regular que pode ser utilizada para capturar qualquer um dos elementos na taxonomia (sem contar com as chaves passadas como argumento).
+
+A expressão regular gerada tem algumas características fundamentais para ter maior utilidade:
+
+=over
+
+=item * É uma expressão regular com várias alternativas, como C</gigante|gelado|pneu|sol/>
+
+=item * As várias alternativas estão ordenadas por ordem decrescente de comprimento:
+
+Tendo a expressão C</filho|filhote/>, nunca é capturada a string C<filhote> porque antes disso já apanhou C<filho>.
+
+Ordenando por ordem decrescente de comprimento da string (C</filhote|filho/>) a string C<filho> só é capturada em casos em que não foi capturada a string C<filhote>.
+
+Por esta razão as várias alternativas são ordenadas antes de serem introduzidas na expressão regular.
+
+=item * As várias alternativas capturam texto em I<lower case>, em I<Title Case> e numa mistura dos dois:
+
+Um elemento como C<'presidente'> dá origem à expresão regular C</[Pp]residente/>.
+
+Um elemento como C<'regulamento geral de taxas'> dá origem à expressão regular C</[Rr]egulamento [Gg]eral de [Tt]axas/>, capturando strings como C<'Regulamento Geral de Taxas'> ou C<'regulamento Geral de Taxas'>.
+
+Especificamente, a primeira letra da string e a primeira letra de todas as palavras com 4 ou mais letras é transformada numa classe que permite a versão maiúscula e minúscula da letra.
 
 =back
 
