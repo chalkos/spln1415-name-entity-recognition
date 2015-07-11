@@ -529,13 +529,13 @@ Existem algumas chaves especiais cujas chaves (das hashes) na árvore descendent
 
 =over
 
-=item * B<'pessoa'> contém elementos textuais do tipo 'I<role>', que representam profissões ou cargos que uma pessoa possa ter;
+=item * B<'pessoa'> contém elementos textuais do tipo 'C<role>', que representam profissões ou cargos que uma pessoa possa ter;
 
-=item * B<'organização'> contém elementos textuais do tipo 'I<organization>', que representam instituições, organizações e outras entidades colectivas;
+=item * B<'organização'> contém elementos textuais do tipo 'C<organization>', que representam instituições, organizações e outras entidades colectivas;
 
-=item * B<'geografia'> contém elementos textuais do tipo 'I<geography>', que representam entidades identificativas de elementos geográficos (exemplo: rio, vale, montanha);
+=item * B<'geografia'> contém elementos textuais do tipo 'C<geography>', que representam entidades identificativas de elementos geográficos (exemplo: rio, vale, montanha);
 
-=item * B<'...'> todos os outros elementos textuais na taxonomia são de tipo desconhecido e ficam associados ao tipo 'I<other>'. Pode.
+=item * B<'...'> todos os outros elementos textuais na taxonomia são de tipo desconhecido e ficam associados ao tipo 'C<other>'. Pode.
 
 =back
 
@@ -573,20 +573,59 @@ Um exemplo real (resumido):
     }
   }
 
-De forma detalhada, tem-se que os elementos 'advogado', 'arquitecto', 'atleta', 'futebolista', 'escritor' e 'poeta' são do tipo 'I<role>'.
+De forma detalhada, tem-se que os elementos 'advogado', 'arquitecto', 'atleta', 'futebolista', 'escritor' e 'poeta' são do tipo 'C<role>'.
 
-Os elementos 'dinastia', 'cortes', 'comissão' e 'comissão europeia' são do tipo 'I<organization>'. Note-se que 'organização_histórica' é um elemento, mas nunca será reconhecido porque todos os '_' são removidos aquando da normalização do texto.
+Os elementos 'dinastia', 'cortes', 'comissão' e 'comissão europeia' são do tipo 'C<organization>'. Note-se que 'organização_histórica' é um elemento, mas nunca será reconhecido porque todos os '_' são removidos aquando da normalização do texto.
 
-Os elementos 'signo', 'mosca' e 'regulamento geral de taxas' são do tipo 'I<other>'. Como demonstrado, os elementos do tipo 'I<other>' não precisam de estar todos aninhados na hash correspondente a uma chave principal da Árvore (no exemplo estão nas chaves 'outro' e 'ainda mais um').
+Os elementos 'signo', 'mosca' e 'regulamento geral de taxas' são do tipo 'C<other>'. Como demonstrado, os elementos do tipo 'C<other>' não precisam de estar todos aninhados na hash correspondente a uma chave principal da Árvore (no exemplo estão nas chaves 'outro' e 'ainda mais um').
 
 As chaves principais da Árvore (no exemplo são 'pessoa', 'organização', 'outro' e 'ainda mais um') não são considerados elementos a reconhecer. Caso se queira reconhecer o texto 'pessoa' como uma entidade é preciso que esta seja adicionada aninhada na hash correspondente a uma chave principal da Árvore.
 
 Na maior parte dos casos, não há necessidade de incluir expressões duplicadas na taxonomia que apenas difiram em termos de maiúsculas e minúsculas. Ao ler os valores da taxonomia, estes são alterados de forma a que, por exemplo, o elemento 'regulamento geral de taxas' permita capturar a entidade 'Regulamento Geral de Taxas' e 'regulamento Geral de Taxas', mas não 'regulamento geral De taxas'. Para mais especificidade, consultar a descrição da subrotina L<taxonomy_to_regex|/"taxonomy_to_regex">.
 
+=head3 ESTRUTURA DE ENTIDADES RECONHECIDAS
 
+Esta estrutura vai sendo construída à medida que vão sendo lidas linhas/textos e pode ser obtida usando a subrotina L<entities|/"entities">.
 
+Segue o seguinte formato:
 
+  {
+    'entidade' => {
+      'relação' => [
+        'valor',
+        'valor',
+        (...)
+      ],
+      'outra_relação' => [
+        'valor',
+        'valor',
+        (...)
+      ]
+    },
+    'outra_entidade' => {
+      (...)
+    },
+    (...)
+  }
 
+E um exemplo de valoração:
+
+  {
+    'António Costa' => {
+      'tipo' => ['person'],
+      'alias' => ['Costa'],
+    },
+    'Costa' => {
+      'tipo' => ['person'],
+      'alias' => ['António Costa'],
+    },
+    'Worten' => {
+      'tipo' => ['organization']
+    },
+    'Signo' => {
+      'tipo' => ['other']
+    }
+  }
 
 
 =head1 SUBROTINAS
@@ -650,7 +689,7 @@ Especificamente, a primeira letra da string e a primeira letra de todas as palav
 
 =back
 
-=head2 INSTANCE METHODS
+=head2 INSTANCE SUBROUTINES
 
 =head3 new
 
@@ -679,18 +718,49 @@ Neste método são criadas as expressões regulares a partir da taxonomia (usand
 
 =head3 recognize_file
 
+Recebe como argumento o caminho para um ficheiro.
 
+Inicia o reconhecimento de um ficheiro. Começa por abrir o ficheiro e depois delega o reconhecimento para L<recognize_file_handle|/"recognize_file_handle">.
 
 =head3 recognize_file_handle
 
+Recebe como argumento um C<FILE_HANDLE> de onde serão lidas as linhas a reconhecer.
 
+Esta subrotina só percorre todas as linhas, delegando o reconhecimento das entidades na linha para L<recognize_line|/"recognize_line">.
 
 =head3 recognize_string
 
+Recebe como argumento uma C<string> de onde serão lidas as linhas a reconhecer.
 
+Esta subrotina só percorre todas as linhas, delegando o reconhecimento das entidades na linha para L<recognize_line|/"recognize_line">.
 
 =head3 recognize_line
 
+Recebe a linha na qual devem ser reconhecidas entidades, L<normaliza-a|/"normalize_line"> e depois faz eval às RewriteRules (que originais quer redefinidas).
+
+Depois a linha é submetida a um L<processo de reconhecimento de entidades|/"rewrite_entities"> (excepto entidades do tipo C<'other'>) e é re-submetida a este processo até não serem encontradas mais entidades.
+
+Depois deste reconhecimento primário, a linha é submetida a um L<processo de reconhecimento de entidades|/"other_stuff_from_taxonomy"> do tipo C<'other'> e é re-submetida a este processo até não serem encontradas mais entidades desse tipo.
+
+Antes de finalizar o reconhecimento das entidades da linha, é feita uma tentativa de encontrar relacionamentos entre as entidades, usando L<find_relations|/"find_relations"> numa versão da linha com anotações e sem sinais de pontuação.
+
+Por fim é invocado o L<review_entities|/"review_entities"> para fazer um tratamento final aos elementos recolhidos.
+
+=head3 add_entity
+
+TODO (já adicionei informação sobre a estrutura, deve ser pouco mais que meter o link)
+
+=head3 review_entities
+
+TODO
+
+=head3 entities
+
+TODO
+
+=head2 REWRITERULES SUBROUTINES
+
+Todos os métodos do rewrite rules, cenas de eval e tal TODO
 
 
 
