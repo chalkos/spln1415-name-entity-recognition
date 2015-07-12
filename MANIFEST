@@ -2,6 +2,7 @@ Changes
 Makefile.PL
 MANIFEST
 README.pod
+README.html
 t/NER.t
 lib/NER.pm
 lib/NER/Recognizer.pm
@@ -18,14 +19,3 @@ app/nomes.yaml
 app/noticia.txt
 app/taxonomia.yaml
 app/Application.pl
-htmlreport/NER_Recognizers_Base.html
-htmlreport/NER_Recognizers_Date.html
-htmlreport/NER_Recognizers_Role.html
-htmlreport/NER_Recognizers_Organization.html
-htmlreport/NER_Recognizers_Geography.html
-htmlreport/NER.html
-htmlreport/NER_Logger.html
-htmlreport/NER_Recognizers_Location.html
-htmlreport/NER_Recognizer.html
-htmlreport/NER_Recognizers_Acronym.html
-htmlreport/NER_Recognizers_Person.html
