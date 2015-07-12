@@ -478,6 +478,19 @@ Existem algumas regras adicionais na makefile do projecto:
 
 =back
 
+=head1 AUTOR
+
+  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
+  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
+
+=head1 COPYRIGHT E LICENÇA
+
+Copyright (C) 2015 by B. Ferreira and M. Pinto
+
+This program is free software; licensed under GPL.
+
+=encoding utf8
+
 =head1 === NER::Logger ===
 
 NER::Logger - Sub-módulo de output de mensagens de I<debug> usado pelo módulo NER.
@@ -514,12 +527,12 @@ Recebe uma string (preferencialmente apenas uma linha terminada com C<\n>) como 
 
 B<$Active>: Se for falso, nenhum output é gerado quando se chama a subrotina L<TRACE|/"TRACE">.
 
-=head1 AUTHOR
+=head1 AUTOR
 
   B. Ferreira E<lt>chalkos@chalkos.netE<gt>
   M. Pinto E<lt>mcpinto98@gmail.comE<gt>
 
-=head1 COPYRIGHT AND LICENSE
+=head1 COPYRIGHT E LICENÇA
 
 Copyright (C) 2015 by B. Ferreira and M. Pinto
 
