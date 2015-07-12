@@ -19,4 +19,5 @@ nytprof.out
 *.bs
 
 pod2htmd.tmp
-htmlreport/
+htmlreport/*.html
+*.tar.gz
