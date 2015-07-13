@@ -77,7 +77,58 @@ sub recognize {
   return (
     $sortedLvls[0]->{type}, # o tipo reconhecido
     $sortedLvls[0]->{lvl}, # a confiança no tipo reconhecido
-    $sortedLvls[0]->{lvl} - $sortedLvls[1]->{lvl}); # proximidade ao segundo lugar
+    $sortedLvls[0]->{lvl} - $sortedLvls[1]->{lvl}); # proximidade ao segundo lugar (margem)
 }
 
 1;
+__END__
+
+=encoding utf8
+
+=head1 === NER::Recognizer ===
+
+NER::Recognizer - Sub-módulo de reconhecimento de entidades usando todos os reconhecedores conhecidos.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizer->new($names,$taxonomy,$entities);
+  my ($type, $trust, $margin) = $recognizer->recognize($possible_entity);
+
+  if( $trust > 40 && $margin > 30 ){
+    print "I'm sure it's a $type.\n";
+  }elsif($trust > 40 && $margin > 10){
+    print "It's probably a $type.\n";
+  }elsif($trust > 40){
+    print "I'm not sure, but I think it's a $type...\n";
+  }else{
+    print "I don't think that's an entity.\n";
+  }
+
+=head1 DESCRIÇÃO
+
+Este módulo usa todos os C<NER::Recognizers::*> (incluindo, de forma indirecta o C<NER::Recognizers::Base>) para tentar identificar o tipo de uma possível entidade.
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS DE INSTÂNCIA
+
+=head3 new
+
+TODO
+
+=head3 recognize
+
+TODO
+
+=head1 AUTOR
+
+  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
+  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
+
+=head1 COPYRIGHT E LICENÇA
+
+Copyright (C) 2015 by B. Ferreira and M. Pinto
+
+This program is free software; licensed under GPL.
+
+=cut

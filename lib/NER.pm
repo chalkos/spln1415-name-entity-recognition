@@ -633,7 +633,7 @@ E um exemplo de valoração:
 
 =head2 EXPORT
 
-None by default.
+Nada é exportado de forma implícita/predefinida.
 
 =head2 EXPORT_OK
 

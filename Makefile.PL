@@ -14,7 +14,7 @@ cleandoc:
 	rm -f README.pod
 	rm -f README.html
 
-README.pod: lib/NER.pm lib/NER/Logger.pm lib/NER/Recognizer.pm lib/NER/Recognizers/Acronym.pm lib/NER/Recognizers/Base.pm lib/NER/Recognizers/Date.pm lib/NER/Recognizers/Geography.pm lib/NER/Recognizers/Location.pm lib/NER/Recognizers/Organization.pm lib/NER/Recognizers/Person.pm lib/NER/Recognizers/Role.pm
+README.pod: lib/NER.pm lib/NER/Logger.pm lib/NER/Recognizer.pm lib/NER/Recognizers/Base.pm lib/NER/Recognizers/Acronym.pm lib/NER/Recognizers/Date.pm lib/NER/Recognizers/Geography.pm lib/NER/Recognizers/Location.pm lib/NER/Recognizers/Organization.pm lib/NER/Recognizers/Person.pm lib/NER/Recognizers/Role.pm
 	podselect -section "!AUTHOR|COPYRIGHT AND LICENSE" $? > README.pod
 	podselect -section "AUTHOR|COPYRIGHT AND LICENSE" $< >> README.pod
 

@@ -23,7 +23,7 @@ sub runAll {
   return (
     $self->palavras_individuais($str),
     $self->fim_de_um_nome_ja_existente($original),
-    $self->inicio_de_str_corresponde_a_algo_que_nao_nome($str),
+    $self->inicio_de_str_corresponde_a_algo_que_nao_nome($original),
   );
 }
 
@@ -128,3 +128,65 @@ sub palavras_individuais_localidade {
 }
 
 1;
+__END__
+
+=encoding utf8
+
+=head1 === NER::Recognizers::Person ===
+
+NER::Recognizers::Person - Sub-módulo de reconhecimento de acrónimos.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Person->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<person>'.
+
+TODO: não esquecer de escrever sobre a forma como este modulo usa o re_recognize
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 palavras_individuais
+
+TODO
+
+=head3 fim_de_um_nome_ja_existente
+
+TODO
+
+=head3 inicio_de_str_corresponde_a_algo_que_nao_nome
+
+TODO
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA PARA PALAVRAS INDIVIDUAIS
+
+=head3 palavras_individuais_hash_nomes
+
+TODO
+
+=head3 palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro
+
+TODO
+
+=head3 palavras_individuais_localidade
+
+TODO
+
+
+=head1 AUTOR
+
+  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
+  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
+
+=head1 COPYRIGHT E LICENÇA
+
+Copyright (C) 2015 by B. Ferreira and M. Pinto
+
+This program is free software; licensed under GPL.
+
+=cut

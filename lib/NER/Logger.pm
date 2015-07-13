@@ -45,7 +45,7 @@ Este módulo é apenas uma forma rápida de activar/desactivar mensagens de debu
 
 =head2 EXPORT
 
-None by default.
+Nada é exportado de forma implícita/predefinida.
 
 =head2 EXPORT_OK
 
