@@ -77,7 +77,7 @@ __END__
 
 =head1 === NER::Recognizers::Location ===
 
-NER::Recognizers::Location - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Location - Sub-módulo de reconhecimento de localizações.
 
 =head1 SINOPSE
 

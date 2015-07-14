@@ -114,11 +114,39 @@ Este módulo usa todos os C<NER::Recognizers::*> (incluindo, de forma indirecta 
 
 =head3 new
 
-TODO
+Recebe como argumentos:
+
+=over
+
+=item 1. os L<nomes|/"ESTRUTURA-DE-NOMES">;
+
+=item 2. a L<taxonomia|/"ESTRUTURA-DA-TAXONOMIA">;
+
+=item 3. a L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS"> (preferencialmente a mesma que é usada pelo NER, para estar sempre actualizada);
+
+=item 4. uma hash com alguns valores adicionais específicos para alguns reconhecedores.
+
+=back
+
+Inicializa instâncias de todos os recognizers e passa uma referência para sí próprio ao L<NER::Recognizers::Person|/"NER::Recognizers::Person"> usando L<set_parent_recognizer|/"set_parent_recognizer">.
 
 =head3 recognize
 
-TODO
+Recebe uma possível entidade.
+
+Usa todos os reconhecedores para reconhecer a entidade. Caso algum deles consiga identificar a entidade a subrotina devolve vários valores para permitir a tomada de decisão de aceitar ou não o reconhecimento.
+
+Valor de retorno:
+
+=over
+
+=item 1. O tipo reconhecido (string);
+
+=item 2. O grau de confiança do tipo reconhecido;
+
+=item 3. Margem entre o grau de confiança do tipo seleccionado e do tipo com maior grau de confiança imediatamente a seguir.
+
+=back
 
 =head1 AUTORES
 

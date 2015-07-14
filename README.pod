@@ -543,11 +543,39 @@ Este módulo usa todos os C<NER::Recognizers::*> (incluindo, de forma indirecta 
 
 =head3 new
 
-TODO
+Recebe como argumentos:
+
+=over
+
+=item 1. os L<nomes|/"ESTRUTURA-DE-NOMES">;
+
+=item 2. a L<taxonomia|/"ESTRUTURA-DA-TAXONOMIA">;
+
+=item 3. a L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS"> (preferencialmente a mesma que é usada pelo NER, para estar sempre actualizada);
+
+=item 4. uma hash com alguns valores adicionais específicos para alguns reconhecedores.
+
+=back
+
+Inicializa instâncias de todos os recognizers e passa uma referência para sí próprio ao L<NER::Recognizers::Person|/"NER::Recognizers::Person"> usando L<set_parent_recognizer|/"set_parent_recognizer">.
 
 =head3 recognize
 
-TODO
+Recebe uma possível entidade.
+
+Usa todos os reconhecedores para reconhecer a entidade. Caso algum deles consiga identificar a entidade a subrotina devolve vários valores para permitir a tomada de decisão de aceitar ou não o reconhecimento.
+
+Valor de retorno:
+
+=over
+
+=item 1. O tipo reconhecido (string);
+
+=item 2. O grau de confiança do tipo reconhecido;
+
+=item 3. Margem entre o grau de confiança do tipo seleccionado e do tipo com maior grau de confiança imediatamente a seguir.
+
+=back
 
 =head1 === NER::Recognizers::Base ===
 
@@ -668,7 +696,7 @@ Devolve 90 se L<REGEX_ACRONYM|/"REGEX_ACRONYM"> fizer I<match> na string da poss
 
 =head1 === NER::Recognizers::Date ===
 
-NER::Recognizers::Date - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Date - Sub-módulo de reconhecimento de datas.
 
 =head1 SINOPSE
 
@@ -719,9 +747,36 @@ Devolve:
 
 =back
 
+=head1 === NER::Recognizers::Geography ===
+
+NER::Recognizers::Geography - Sub-módulo de reconhecimento de elementos geográficos.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Geography->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<geography>'.
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 rec_taxonomia
+
+Recebe uma possível entidade.
+
+Se na criação da instância se tiver passado uma hash de conteúdos adicionais com uma chave 'C<RW_TAXONOMY_GEOGRAPHY_LHS>', esta é usada como uma expressão regular. Se a string fizer I<match> com a expressão regular, a subrotina devolve o valor 90, caso contrário dá o valor 0.
+
+Se não conseguir obter a expressão regular, a subrotina devolve o valor 0.
+
+A intenção é que a expressão regular seja obtida usando C<L<NER|/"NER">-E<gt>L<taxonomy_to_regex|/"taxonomy_to_regex">($taxonomy, 'geografia')>. Desta forma a expressão regular usada no C<Text::RewriteRules> para capturar possíveis entidades é a mesma que é usada no módulo para identificar entidades desse tipo.
+
 =head1 === NER::Recognizers::Location ===
 
-NER::Recognizers::Location - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Location - Sub-módulo de reconhecimento de localizações.
 
 =head1 SINOPSE
 
@@ -750,7 +805,7 @@ Devolve 80 se alguma das expressões regulares para reconhecer casos específico
 
 =head1 === NER::Recognizers::Organization ===
 
-NER::Recognizers::Organization - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Organization - Sub-módulo de reconhecimento de organizações e instituições.
 
 =head1 SINOPSE
 
@@ -767,16 +822,23 @@ Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"N
 
 =head3 rec_especificas
 
-TODO
+Recebe uma possível entidade.
+
+Devolve 100 se alguma das expressões regulares para reconhecer casos específicos fizer I<match> com a string. Caso não faça I<match> devolve 0 (valor neutro).
 
 =head3 rec_taxonomia
 
-TODO
+Recebe uma possível entidade.
 
+Se na criação da instância se tiver passado uma hash de conteúdos adicionais com uma chave 'C<RW_TAXONOMY_ORGANIZATION_LHS>', esta é usada como uma expressão regular. Se a string fizer I<match> com a expressão regular, a subrotina devolve o valor 90, caso contrário dá o valor 0.
+
+Se não conseguir obter a expressão regular, a subrotina devolve o valor 0.
+
+A intenção é que a expressão regular seja obtida usando C<L<NER|/"NER">-E<gt>L<taxonomy_to_regex|/"taxonomy_to_regex">($taxonomy, 'organização')>. Desta forma a expressão regular usada no C<Text::RewriteRules> para capturar possíveis entidades é a mesma que é usada no módulo para identificar entidades desse tipo.
 
 =head1 === NER::Recognizers::Person ===
 
-NER::Recognizers::Person - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Person - Sub-módulo de reconhecimento de nomes de pessoas.
 
 =head1 SINOPSE
 
@@ -795,34 +857,47 @@ TODO: não esquecer de escrever sobre a forma como este modulo usa o re_recogniz
 
 =head3 palavras_individuais
 
-TODO
+Recebe como argumento a possível entidade (string).
+
+Executa algumas subrotinas especializadas para obter resultados com base em palavras individuais que existam dentro da string. Todas as subrotinas são executadas para cada palavra. No fim é devolvida a média de todos os valores diferentes de 0 vindos dessas subrotinas mais especializadas.
+
+As subrotinas mais especializadas são
+L<palavras_individuais_hash_nomes|/"palavras_individuais_hash_nomes">
+L<palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro|/"palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro">
 
 =head3 fim_de_um_nome_ja_existente
 
-TODO
+Recebe uma possível entidade.
+
+Devolve o valor 90 se a possível entidade corresponder ao fim de uma entidade que seja um nome de uma pessoa (porque existe a probabilidade de se estar a referir uma pessoa por um ou mais dos seus apelidos finais). E devolve 0 caso não consiga tirar conclusões.
 
 =head3 inicio_de_str_corresponde_a_algo_que_nao_nome
 
-TODO
+Recebe uma possível entidade.
+
+Analisa todas as substrings que começam no início da string e são diferentes da string. Para cada uma das substrings tenta reconhecer (usando a instância do L<NER::Recognizer|/"NER::Recognizer"> definida em L<set_parent_recognizer|/"set_parent_recognizer">) algo que não seja um nome com um grau de confiança maior ou igual a 40. Caso seja reconhecida uma nova entidade, esta subrotina devolve um valor entre 1 e 20 (baixando significativamente a média de graus de confiança para o reconhecimento de um nome).
+
+Por exemplo, para "Lisboa António Costa" tem-se as substrings "Lisboa" e "Lisboa António". Ao tentar reconhecer "Lisboa", o reconhecedor identifica uma cidade com um alto grau de confiança, e por isso a subrotina devolve 1.
+
+Se nenhuma das substrings for reconhecida como algo que não seja um nome, a subrotina devolve o valor 0 (para evitar influenciar negativamente o actual grau de confiança).
 
 =head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA PARA PALAVRAS INDIVIDUAIS
 
 =head3 palavras_individuais_hash_nomes
 
-TODO
+Recebe uma palavra.
+
+Devolve 70 se essa palavra constar na hash de nomes. Caso contrário devolve 0.
 
 =head3 palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro
 
-TODO
+Recebe uma palavra.
 
-=head3 palavras_individuais_localidade
-
-TODO
-
+Devolve 70 se essa palavra for identificada como nome português ou estrangeiro pelo Jspell. Caso contrário devolve 0.
 
 =head1 === NER::Recognizers::Role ===
 
-NER::Recognizers::Role - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Role - Sub-módulo de reconhecimento de profissões e cargos de pessoas.
 
 =head1 SINOPSE
 
@@ -839,7 +914,13 @@ Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"N
 
 =head3 rec_taxonomia
 
-TODO
+Recebe uma possível entidade.
+
+Se na criação da instância se tiver passado uma hash de conteúdos adicionais com uma chave 'C<RW_TAXONOMY_ROLE_LHS>', esta é usada como uma expressão regular. Se a string fizer I<match> com a expressão regular, a subrotina devolve o valor 90, caso contrário dá o valor 0.
+
+Se não conseguir obter a expressão regular, a subrotina devolve o valor 0.
+
+A intenção é que a expressão regular seja obtida usando C<L<NER|/"NER">-E<gt>L<taxonomy_to_regex|/"taxonomy_to_regex">($taxonomy, 'pessoa')>. Desta forma a expressão regular usada no C<Text::RewriteRules> para capturar possíveis entidades é a mesma que é usada no módulo para identificar entidades desse tipo.
 
 =head1 AUTORES
 

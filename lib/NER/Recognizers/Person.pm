@@ -49,7 +49,6 @@ sub inicio_de_str_corresponde_a_algo_que_nao_nome {
     if( $lvl >= 40 && $type ne 'person' ){
       TRACE("$substr is not a person!\n");
       my $ret = 100-2*$lvl;
-      return 40 if( $ret > 40 );
       return 1 if($ret < 1);
       return $ret;
     }
@@ -115,17 +114,17 @@ sub palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro {
   return 0;
 }
 
-sub palavras_individuais_localidade {
-  my ($self, $palavra) = @_;
-
-  my @fea = $self->{dict}->fea($palavra);
-  foreach my $analise ( @fea ) {
-    if( $analise->{CAT} =~ /np/ && defined($analise->{SEM}) && $analise->{SEM} =~ /^(cid|ter|country)$/ ){
-      return 0;
-    }
-  }
-  return 0;
-}
+#sub palavras_individuais_localidade {
+#  my ($self, $palavra) = @_;
+#
+#  my @fea = $self->{dict}->fea($palavra);
+#  foreach my $analise ( @fea ) {
+#    if( $analise->{CAT} =~ /np/ && defined($analise->{SEM}) && $analise->{SEM} =~ /^(cid|ter|country)$/ ){
+#      return 0;
+#    }
+#  }
+#  return 0;
+#}
 
 1;
 __END__
@@ -134,7 +133,7 @@ __END__
 
 =head1 === NER::Recognizers::Person ===
 
-NER::Recognizers::Person - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Person - Sub-módulo de reconhecimento de nomes de pessoas.
 
 =head1 SINOPSE
 
@@ -153,30 +152,43 @@ TODO: não esquecer de escrever sobre a forma como este modulo usa o re_recogniz
 
 =head3 palavras_individuais
 
-TODO
+Recebe como argumento a possível entidade (string).
+
+Executa algumas subrotinas especializadas para obter resultados com base em palavras individuais que existam dentro da string. Todas as subrotinas são executadas para cada palavra. No fim é devolvida a média de todos os valores diferentes de 0 vindos dessas subrotinas mais especializadas.
+
+As subrotinas mais especializadas são
+L<palavras_individuais_hash_nomes|/"palavras_individuais_hash_nomes">
+L<palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro|/"palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro">
 
 =head3 fim_de_um_nome_ja_existente
 
-TODO
+Recebe uma possível entidade.
+
+Devolve o valor 90 se a possível entidade corresponder ao fim de uma entidade que seja um nome de uma pessoa (porque existe a probabilidade de se estar a referir uma pessoa por um ou mais dos seus apelidos finais). E devolve 0 caso não consiga tirar conclusões.
 
 =head3 inicio_de_str_corresponde_a_algo_que_nao_nome
 
-TODO
+Recebe uma possível entidade.
+
+Analisa todas as substrings que começam no início da string e são diferentes da string. Para cada uma das substrings tenta reconhecer (usando a instância do L<NER::Recognizer|/"NER::Recognizer"> definida em L<set_parent_recognizer|/"set_parent_recognizer">) algo que não seja um nome com um grau de confiança maior ou igual a 40. Caso seja reconhecida uma nova entidade, esta subrotina devolve um valor entre 1 e 20 (baixando significativamente a média de graus de confiança para o reconhecimento de um nome).
+
+Por exemplo, para "Lisboa António Costa" tem-se as substrings "Lisboa" e "Lisboa António". Ao tentar reconhecer "Lisboa", o reconhecedor identifica uma cidade com um alto grau de confiança, e por isso a subrotina devolve 1.
+
+Se nenhuma das substrings for reconhecida como algo que não seja um nome, a subrotina devolve o valor 0 (para evitar influenciar negativamente o actual grau de confiança).
 
 =head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA PARA PALAVRAS INDIVIDUAIS
 
 =head3 palavras_individuais_hash_nomes
 
-TODO
+Recebe uma palavra.
+
+Devolve 70 se essa palavra constar na hash de nomes. Caso contrário devolve 0.
 
 =head3 palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro
 
-TODO
+Recebe uma palavra.
 
-=head3 palavras_individuais_localidade
-
-TODO
-
+Devolve 70 se essa palavra for identificada como nome português ou estrangeiro pelo Jspell. Caso contrário devolve 0.
 
 =head1 AUTORES
 

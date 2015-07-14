@@ -58,7 +58,7 @@ __END__
 
 =head1 === NER::Recognizers::Organization ===
 
-NER::Recognizers::Organization - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Organization - Sub-módulo de reconhecimento de organizações e instituições.
 
 =head1 SINOPSE
 
@@ -75,12 +75,19 @@ Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"N
 
 =head3 rec_especificas
 
-TODO
+Recebe uma possível entidade.
+
+Devolve 100 se alguma das expressões regulares para reconhecer casos específicos fizer I<match> com a string. Caso não faça I<match> devolve 0 (valor neutro).
 
 =head3 rec_taxonomia
 
-TODO
+Recebe uma possível entidade.
 
+Se na criação da instância se tiver passado uma hash de conteúdos adicionais com uma chave 'C<RW_TAXONOMY_ORGANIZATION_LHS>', esta é usada como uma expressão regular. Se a string fizer I<match> com a expressão regular, a subrotina devolve o valor 90, caso contrário dá o valor 0.
+
+Se não conseguir obter a expressão regular, a subrotina devolve o valor 0.
+
+A intenção é que a expressão regular seja obtida usando C<L<NER|/"NER">-E<gt>L<taxonomy_to_regex|/"taxonomy_to_regex">($taxonomy, 'organização')>. Desta forma a expressão regular usada no C<Text::RewriteRules> para capturar possíveis entidades é a mesma que é usada no módulo para identificar entidades desse tipo.
 
 =head1 AUTORES
 

@@ -66,7 +66,7 @@ __END__
 
 =head1 === NER::Recognizers::Date ===
 
-NER::Recognizers::Date - Sub-módulo de reconhecimento de acrónimos.
+NER::Recognizers::Date - Sub-módulo de reconhecimento de datas.
 
 =head1 SINOPSE
 
