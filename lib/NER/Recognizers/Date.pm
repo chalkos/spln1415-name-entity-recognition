@@ -87,11 +87,11 @@ Nada é exportado de forma implícita/predefinida.
 
 =head3 REGEX_DATE
 
-TODO
+Expressão regular usada para capturar entidades do tipo 'C<date>'. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<date>'.
 
 =head3 REGEX_YEAR
 
-TODO
+Expressão regular usada para capturar entidades do tipo 'C<date>', esta expressão só identifica anos. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<date>'.
 
 =head1 SUBROTINAS
 
@@ -103,7 +103,19 @@ Nada é exportado de forma implícita/predefinida.
 
 =head3 rec_especificas
 
-TODO
+Recebe a possível entidade.
+
+Devolve:
+
+=over
+
+=item * 90 se L<REGEX_DATE|/"REGEX_DATE"> fizer I<match> na string da possível entidade;
+
+=item * 70 se L<REGEX_YEAR|/"REGEX_YEAR"> fizer I<match> na string da possível entidade;
+
+=item * 1 para outros casos.
+
+=back
 
 =head1 AUTORES
 

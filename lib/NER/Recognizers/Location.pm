@@ -19,7 +19,7 @@ sub runAll {
 
   return (
     $self->rec_jspell_base($str),
-    $self->rec_altas_directas($str),
+    $self->rec_especificas($str),
   );
 }
 
@@ -55,7 +55,7 @@ sub rec_jspell_base {
   return $confianca;
 }
 
-sub rec_altas_directas {
+sub rec_especificas {
   my ($self, $str) = @_;
 
   my @expReg = (
@@ -94,12 +94,15 @@ Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"N
 
 =head3 rec_jspell_base
 
-TODO
+Recebe uma possível entidade (string).
 
-=head3 rec_altas_directas
+Devolve um valor com base na razão entre o número de palavras contidas na string que são identificadas como localidades pelo Jspell e o total de palavras na string.
 
-TODO
+=head3 rec_especificas
 
+Recebe uma possível entidade.
+
+Devolve 80 se alguma das expressões regulares para reconhecer casos específicos fizer I<match> com a string. Caso não faça I<match> devolve 0 (valor neutro).
 
 =head1 AUTORES
 

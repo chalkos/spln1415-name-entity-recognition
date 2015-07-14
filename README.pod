@@ -640,13 +640,31 @@ NER::Recognizers::Acronym - Sub-módulo de reconhecimento de acrónimos.
 
 Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<acronym>'.
 
+=head1 VARIÁVEIS GLOBAIS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
+
+=head2 EXPORT_OK
+
+=head3 REGEX_ACRONYM
+
+Expressão regular usada para capturar entidades do tipo 'C<acronym>'. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<acronym>'.
+
 =head1 SUBROTINAS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
 
 =head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
 
 =head3 rec_especificas
 
-TODO
+Recebe a possível entidade.
+
+Devolve 90 se L<REGEX_ACRONYM|/"REGEX_ACRONYM"> fizer I<match> na string da possível entidade. Devolve 1 caso não seja possível fazer I<match>.
 
 =head1 === NER::Recognizers::Date ===
 
@@ -671,11 +689,11 @@ Nada é exportado de forma implícita/predefinida.
 
 =head3 REGEX_DATE
 
-TODO
+Expressão regular usada para capturar entidades do tipo 'C<date>'. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<date>'.
 
 =head3 REGEX_YEAR
 
-TODO
+Expressão regular usada para capturar entidades do tipo 'C<date>', esta expressão só identifica anos. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<date>'.
 
 =head1 SUBROTINAS
 
@@ -687,7 +705,19 @@ Nada é exportado de forma implícita/predefinida.
 
 =head3 rec_especificas
 
-TODO
+Recebe a possível entidade.
+
+Devolve:
+
+=over
+
+=item * 90 se L<REGEX_DATE|/"REGEX_DATE"> fizer I<match> na string da possível entidade;
+
+=item * 70 se L<REGEX_YEAR|/"REGEX_YEAR"> fizer I<match> na string da possível entidade;
+
+=item * 1 para outros casos.
+
+=back
 
 =head1 === NER::Recognizers::Location ===
 
@@ -708,12 +738,15 @@ Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"N
 
 =head3 rec_jspell_base
 
-TODO
+Recebe uma possível entidade (string).
 
-=head3 rec_altas_directas
+Devolve um valor com base na razão entre o número de palavras contidas na string que são identificadas como localidades pelo Jspell e o total de palavras na string.
 
-TODO
+=head3 rec_especificas
 
+Recebe uma possível entidade.
+
+Devolve 80 se alguma das expressões regulares para reconhecer casos específicos fizer I<match> com a string. Caso não faça I<match> devolve 0 (valor neutro).
 
 =head1 === NER::Recognizers::Organization ===
 
@@ -808,7 +841,7 @@ Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"N
 
 TODO
 
-=head1 AUTOR
+=head1 AUTORES
 
   B. Ferreira E<lt>chalkos@chalkos.netE<gt>
   M. Pinto E<lt>mcpinto98@gmail.comE<gt>
