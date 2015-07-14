@@ -478,19 +478,6 @@ Existem algumas regras adicionais na makefile do projecto:
 
 =back
 
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
-
 =head1 === NER::Logger ===
 
 NER::Logger - Sub-módulo de output de mensagens de I<debug> usado pelo módulo NER.
@@ -527,19 +514,6 @@ Recebe uma string (preferencialmente apenas uma linha terminada com C<\n>) como 
 
 B<$Active>: Se for falso, nenhum output é gerado quando se chama a subrotina L<TRACE|/"TRACE">.
 
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
-
 =head1 === NER::Recognizer ===
 
 NER::Recognizer - Sub-módulo de reconhecimento de entidades usando todos os reconhecedores conhecidos.
@@ -574,19 +548,6 @@ TODO
 =head3 recognize
 
 TODO
-
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
 
 =head1 === NER::Recognizers::Base ===
 
@@ -666,19 +627,6 @@ Esta subrotina é usada de forma semelhante a um método I<abstract> em linguage
 
 A documentação desta subrotina foi incluída no C<NER::Recognizers::Base> por ter um funcionamento idêntico em todas as suas implementações, embora todos os C<NER::Recognizers::*> menos o C<NER::Recognizers::Base> a definam.
 
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
-
 =head1 === NER::Recognizers::Acronym ===
 
 NER::Recognizers::Acronym - Sub-módulo de reconhecimento de acrónimos.
@@ -699,19 +647,6 @@ Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"N
 =head3 rec_especificas
 
 TODO
-
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
 
 =head1 === NER::Recognizers::Date ===
 
@@ -754,19 +689,6 @@ Nada é exportado de forma implícita/predefinida.
 
 TODO
 
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
-
 =head1 === NER::Recognizers::Location ===
 
 NER::Recognizers::Location - Sub-módulo de reconhecimento de acrónimos.
@@ -793,19 +715,6 @@ TODO
 TODO
 
 
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
-
 =head1 === NER::Recognizers::Organization ===
 
 NER::Recognizers::Organization - Sub-módulo de reconhecimento de acrónimos.
@@ -831,19 +740,6 @@ TODO
 
 TODO
 
-
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
 
 =head1 === NER::Recognizers::Person ===
 
@@ -891,19 +787,6 @@ TODO
 TODO
 
 
-=head1 AUTOR
-
-  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
-  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
-
-=head1 COPYRIGHT E LICENÇA
-
-Copyright (C) 2015 by B. Ferreira and M. Pinto
-
-This program is free software; licensed under GPL.
-
-=encoding utf8
-
 =head1 === NER::Recognizers::Role ===
 
 NER::Recognizers::Role - Sub-módulo de reconhecimento de acrónimos.
@@ -930,7 +813,7 @@ TODO
   B. Ferreira E<lt>chalkos@chalkos.netE<gt>
   M. Pinto E<lt>mcpinto98@gmail.comE<gt>
 
-=head1 COPYRIGHT E LICENÇA
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2015 by B. Ferreira and M. Pinto
 

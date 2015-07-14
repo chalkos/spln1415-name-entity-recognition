@@ -51,20 +51,38 @@ NER::Recognizers::Acronym - Sub-módulo de reconhecimento de acrónimos.
 
 Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<acronym>'.
 
+=head1 VARIÁVEIS GLOBAIS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
+
+=head2 EXPORT_OK
+
+=head3 REGEX_ACRONYM
+
+Expressão regular usada para capturar entidades do tipo 'C<acronym>'. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<acronym>'.
+
 =head1 SUBROTINAS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
 
 =head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
 
 =head3 rec_especificas
 
-TODO
+Recebe a possível entidade.
 
-=head1 AUTOR
+Devolve 90 se L<REGEX_ACRONYM|/"REGEX_ACRONYM"> fizer I<match> na string da possível entidade. Devolve 1 caso não seja possível fazer I<match>.
+
+=head1 AUTORES
 
   B. Ferreira E<lt>chalkos@chalkos.netE<gt>
   M. Pinto E<lt>mcpinto98@gmail.comE<gt>
 
-=head1 COPYRIGHT E LICENÇA
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2015 by B. Ferreira and M. Pinto
 

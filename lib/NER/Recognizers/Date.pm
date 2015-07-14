@@ -105,12 +105,12 @@ Nada é exportado de forma implícita/predefinida.
 
 TODO
 
-=head1 AUTOR
+=head1 AUTORES
 
   B. Ferreira E<lt>chalkos@chalkos.netE<gt>
   M. Pinto E<lt>mcpinto98@gmail.comE<gt>
 
-=head1 COPYRIGHT E LICENÇA
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2015 by B. Ferreira and M. Pinto
 

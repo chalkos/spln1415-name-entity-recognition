@@ -145,12 +145,12 @@ Esta subrotina é usada de forma semelhante a um método I<abstract> em linguage
 
 A documentação desta subrotina foi incluída no C<NER::Recognizers::Base> por ter um funcionamento idêntico em todas as suas implementações, embora todos os C<NER::Recognizers::*> menos o C<NER::Recognizers::Base> a definam.
 
-=head1 AUTOR
+=head1 AUTORES
 
   B. Ferreira E<lt>chalkos@chalkos.netE<gt>
   M. Pinto E<lt>mcpinto98@gmail.comE<gt>
 
-=head1 COPYRIGHT E LICENÇA
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2015 by B. Ferreira and M. Pinto
 

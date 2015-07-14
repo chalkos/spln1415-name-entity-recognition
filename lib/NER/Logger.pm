@@ -57,12 +57,12 @@ Recebe uma string (preferencialmente apenas uma linha terminada com C<\n>) como 
 
 B<$Active>: Se for falso, nenhum output é gerado quando se chama a subrotina L<TRACE|/"TRACE">.
 
-=head1 AUTOR
+=head1 AUTORES
 
   B. Ferreira E<lt>chalkos@chalkos.netE<gt>
   M. Pinto E<lt>mcpinto98@gmail.comE<gt>
 
-=head1 COPYRIGHT E LICENÇA
+=head1 COPYRIGHT AND LICENSE
 
 Copyright (C) 2015 by B. Ferreira and M. Pinto
 
