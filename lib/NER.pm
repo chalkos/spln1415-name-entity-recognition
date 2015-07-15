@@ -51,8 +51,8 @@ RULES/m rewrite_entities
 ([^\p{L}])($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$1.$RWTEXT!! $self->recognize($2)
 ^($NER::Recognizers::Date::REGEX_DATE)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)
 ([^\p{L}])($NER::Recognizers::Date::REGEX_DATE)$=e=>$1.$RWTEXT!! $self->recognize($2)
-([^\p{L}](?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)(?!\p{L})=e=>$1.' '.$RWTEXT!! $self->recognize($2)
-([^\p{L}](?:no|em) \p{L}+ de|em|ano de) ($NER::Recognizers::Date::REGEX_YEAR)$=e=>$1.' '.$RWTEXT!! $self->recognize($2)
+([^\p{L}](?:(?:no|em) \p{L}+ de|em|ano de)) ($NER::Recognizers::Date::REGEX_YEAR)(?!\p{L})=e=>$1.' '.$RWTEXT!! $self->recognize($2)
+([^\p{L}](?:(?:no|em) \p{L}+ de|em|ano de)) ($NER::Recognizers::Date::REGEX_YEAR)$=e=>$1.' '.$RWTEXT!! $self->recognize($2)
 
 ([^\p{L}])($NER::Recognizers::Acronym::REGEX_ACRONYM)(?!\p{L})=e=>$1.$RWTEXT!! $self->recognize($2)
 ^($NER::Recognizers::Acronym::REGEX_ACRONYM)(?!\p{L})=e=>$RWTEXT!! $self->recognize($1)

@@ -133,4 +133,14 @@ is_deeply( rstr({}, {pessoa=>{politico=>{'primeiro ministro'=>1}}},
     'Primeiro Ministro' => {tipo=>['role']}
   }, "Detecta, separa e relaciona correctamente entidades (2)" );
 
+#####################################
+is_deeply( rstr({}, {pessoa=>{politico=>{'primeiro ministro'=>1}}},
+  "Em 09/07/1992 nasceu um rapaz, mais tarde, a 21 de Setembro de 1992 nasceu outro rapaz. O mais velho destes rapazes tem 23 anos, embora ambos tenham nascido em 1992, isto é, no ano de 92."),
+  {
+    '09/07/1992' => {tipo=>['date']},
+    '21 de Setembro de 1992' => {tipo=>['date']},
+    '1992' => {tipo=>['date']},
+    '92' => {tipo=>['date']},
+  }, "Reconhece datas" );
+
 done_testing();
