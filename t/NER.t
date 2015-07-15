@@ -134,7 +134,7 @@ is_deeply( rstr({}, {pessoa=>{politico=>{'primeiro ministro'=>1}}},
   }, "Detecta, separa e relaciona correctamente entidades (2)" );
 
 #####################################
-is_deeply( rstr({}, {pessoa=>{politico=>{'primeiro ministro'=>1}}},
+is_deeply( rstr({}, {},
   "Em 09/07/1992 nasceu um rapaz, mais tarde, a 21 de Setembro de 1992 nasceu outro rapaz. O mais velho destes rapazes tem 23 anos, embora ambos tenham nascido em 1992, isto é, no ano de 92."),
   {
     '09/07/1992' => {tipo=>['date']},
@@ -142,5 +142,14 @@ is_deeply( rstr({}, {pessoa=>{politico=>{'primeiro ministro'=>1}}},
     '1992' => {tipo=>['date']},
     '92' => {tipo=>['date']},
   }, "Reconhece datas" );
+
+#####################################
+is_deeply( rstr({}, {organização=>{'União Europeia'=>1}},
+  "O artigo referia-se à UE (União Europeia), dizendo que a TROIKA queria.."),
+  {
+    'UE' => {tipo=>['acronym'], 'refere-se a'=>['União Europeia']},
+    'TROIKA' => {tipo=>['acronym']},
+    'União Europeia' => {tipo=>['organization'], 'tem acrónimo'=>['UE']},
+  }, "Reconhece acrónimos" );
 
 done_testing();
