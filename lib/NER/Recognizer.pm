@@ -21,17 +21,17 @@ use NER::Recognizers::Acronym;
 
 ######################################
 sub new{
-  my ($class,$names,$taxonomy,$entities,$more) = @_;
+  my ($class,$names,$taxonomy,$entities,$jspell,$more) = @_;
   my $self = bless {
     'name' => $names,
     'taxo' => $taxonomy,
-    'rPerson' => NER::Recognizers::Person->new($names,$taxonomy,$entities,$more),
-    'rLocation' => NER::Recognizers::Location->new($names,$taxonomy,$entities,$more),
-    'rOrganization' => NER::Recognizers::Organization->new($names,$taxonomy,$entities,$more),
-    'rRole' => NER::Recognizers::Role->new($names,$taxonomy,$entities,$more),
-    'rDate' => NER::Recognizers::Date->new($names,$taxonomy,$entities,$more),
-    'rGeography' => NER::Recognizers::Geography->new($names,$taxonomy,$entities,$more),
-    'rAcronym' => NER::Recognizers::Acronym->new($names,$taxonomy,$entities,$more),
+    'rPerson' => NER::Recognizers::Person->new($names,$taxonomy,$entities,$jspell,$more),
+    'rLocation' => NER::Recognizers::Location->new($names,$taxonomy,$entities,$jspell,$more),
+    'rOrganization' => NER::Recognizers::Organization->new($names,$taxonomy,$entities,$jspell,$more),
+    'rRole' => NER::Recognizers::Role->new($names,$taxonomy,$entities,$jspell,$more),
+    'rDate' => NER::Recognizers::Date->new($names,$taxonomy,$entities,$jspell,$more),
+    'rGeography' => NER::Recognizers::Geography->new($names,$taxonomy,$entities,$jspell,$more),
+    'rAcronym' => NER::Recognizers::Acronym->new($names,$taxonomy,$entities,$jspell,$more),
     }, $class;
 
   $self->{rPerson}->set_parent_recognizer($self);
@@ -124,7 +124,9 @@ Recebe como argumentos:
 
 =item 3. a L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS"> (preferencialmente a mesma que é usada pelo NER, para estar sempre actualizada);
 
-=item 4. uma hash com alguns valores adicionais específicos para alguns reconhecedores.
+=item 4. o dicionário jspell a utilizar pelos reconhecedores;
+
+=item 5. uma hash com alguns valores adicionais específicos para alguns reconhecedores.
 
 =back
 

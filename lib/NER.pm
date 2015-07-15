@@ -180,14 +180,16 @@ sub new{
   my $RW_TAXONOMY_OTHER = taxonomy_to_regex($taxonomy,
     grep { $_ ne 'pessoa' && $_ ne 'organização' && $_ ne 'geografia' } (keys %$taxonomy));
 
+  my $dict = Lingua::Jspell->new("port");
+
   my $entities = {};
   my $self = bless {
-    'dict' => Lingua::Jspell->new("port"),
+    'dict' => $dict,
     'names' => $names,
     'taxonomy' => $taxonomy,
     'entities' => $entities, #recognized entities
     'rewrite_rules' => $re_write,
-    'recognizer' => NER::Recognizer->new($names, $taxonomy, $entities, {
+    'recognizer' => NER::Recognizer->new($names, $taxonomy, $entities, $dict, {
       RW_TAXONOMY_ROLE_LHS=>$RW_TAXONOMY_ROLE_LHS,
       RW_TAXONOMY_ORGANIZATION_LHS=>$RW_TAXONOMY_ORGANIZATION_LHS,
       RW_TAXONOMY_GEOGRAPHY_LHS=>$RW_TAXONOMY_GEOGRAPHY_LHS,

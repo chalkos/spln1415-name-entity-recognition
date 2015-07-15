@@ -16,13 +16,13 @@ use List::Util qw(sum);
 # em todos os outros módulos NER::Recognizers::*
 
 sub new{
-  my ($class,$names,$taxonomy,$entities,$more) = @_;
+  my ($class,$names,$taxonomy,$entities,$jspell,$more) = @_;
 
   my $self = bless {
     'name' => $names,
     'taxo' => $taxonomy,
     'enti' => $entities,
-    'dict' => Lingua::Jspell->new("port"),
+    'dict' => $jspell,
     'more' => $more,
     }, $class;
 
@@ -95,7 +95,9 @@ Recebe como argumentos:
 
 =item 3. a L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS"> (preferencialmente a mesma que é usada pelo NER, para estar sempre actualizada);
 
-=item 4. uma hash com alguns valores adicionais específicos para alguns reconhecedores.
+=item 4. o dicionário jspell a utilizar pelos reconhecedores;
+
+=item 5. uma hash com alguns valores adicionais específicos para alguns reconhecedores.
 
 =back
 
