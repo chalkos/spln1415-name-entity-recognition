@@ -27,7 +27,10 @@ README.html: README.pod
 WriteMakefile(
     NAME              => 'NER',
     VERSION_FROM      => 'lib/NER.pm', # finds $VERSION, requires EU::MM from perl >= 5.5
-    PREREQ_PM         => {}, # e.g., Module::Name => 1.1
+    PREREQ_PM         => {
+        'Lingua::Jspell' => 0,
+        'Text::RewriteRules' => 0
+    }, # e.g., Module::Name => 1.1
     ABSTRACT_FROM     => 'lib/NER.pm', # retrieve abstract from module
     AUTHOR            => 'B. Ferreira <chalkos@chalkos.net>, M. Pinto <mcpinto98@gmail.com>',
     #LICENSE           => 'perl',
