@@ -1,0 +1,939 @@
+=encoding utf8
+
+=head1 === NER ===
+
+NER - Name Entity Recognition, reconhecedor de nomes e entidades para textos em Portguês
+
+
+
+
+=head1 SINOPSE
+
+  use NER;
+  my $recognizer = NER->new($names,$taxonomy);
+
+  # read text from a string
+  $recognizer->recognize_string(STDIN);
+
+  #OR
+  # read text from file
+  $recognizer->recognize_file($some_text_file);
+
+  #OR
+  # read text from STDIN
+  $recognizer->recognize_file_handle(STDIN);
+
+  my $entities = $recognizer->entities;
+
+
+
+
+=head1 DESCRIÇÃO
+
+O Name Entity Recognition permite reconhecer entidades presentes em textos escritos em linguagem natural sem anotações. Para auxiliar esse reconhecimento, pode ser fornecida uma lista de nomes/apelidos e uma taxonomia (organizada em árvore). Além destes, o módulo usa também um dicionário jspell da língua portuguesa.
+
+Ao reconhecer um texto, o NER encontra palavras e expressões com grande probabilidade de serem entidades e submete-as a um sub-módulo (NER::Recognizer) que as tenta identificar como algum tipo de entidade (pessoa, localização, etc). As entidades reconhecidas são guardadas e o texto original é anotado. Por fim as entidades reconhecidas e o texto anotado são revistos à procura de possíveis relações entre as entidades.
+
+Um objecto NER permite reconhecer vários textos e obter o conjunto de todas as entidades encontradas em todos os textos. Devido a detalhes de implementação, isto pode significar resultados diferentes conforme a ordem de reconhecimento dos textos.
+
+O NER está dividido em vários módulos:
+
+=over
+
+=item * B<NER>
+
+Módulo base, itera sobre o texto, submetendo várias possíveis entidades para serem identificadas pelo NER::Recognizer.
+
+=item * B<NER::Recognizer>
+
+Sub-módulo que gere a identificação de entidades no texto.
+
+=item * B<NER::Logger>
+
+Sub-módulo para facilitar a activação/desactivação de texto de debug.
+
+=item * B<NER::Recognizers::*> (excepto NER::Recognizers::Base)
+
+Sub-módulos que indicam a probabilidade de uma possível entidade ser de um tipo específico (uma pessoa ou localização, por exemplo).
+
+Todos estes módulos são do tipo NER::Recognizers::Base (usando @ISA).
+
+=item * B<NER::Recognizers::Base>
+
+Sub-módulo que não é usado directamente para reconhecer texto, mas tem métodos comuns a todos os outros reconhecedores.
+
+=back
+
+=head1 ESTRUTURAS DE DADOS
+
+=head2 ESTRUTURA EM ÁRVORE
+
+Sempre que forem referidas estruturas em árvore, são estruturas recursivas formadas por várias hashes, em que cada nó é uma hash identificada por uma chave da hash do nó imediatamente acima e cada folha é um valor identificado por uma chave da hash do nó que a suporta.
+
+Demonstração:
+
+  {
+    'um' => 1,
+    'três' => {
+      'quatro' => 'abc',
+      'cinco' => {
+        'seis' => 6,
+        'sete' => 7
+      }
+    }
+    'dois' => undef
+  }
+
+Corresponde à árvore:
+
+      < raiz >
+     /   |    \
+    /    |     \
+  um   dois    três
+   |     |     |   \
+   1  undef  cinco quatro
+            /   \      \
+          seis  sete   abc
+           |      |
+           6      7
+
+=head2 ESTRUTURA DE NOMES
+
+Lista de nomes como chaves de uma hash. O reconhecedor funciona com uma hash vazia, mas terá piores resultados.
+
+A lista é uma hash com o seguinte formato:
+
+  {
+    "António"=>"nome",
+    "Augusto"=>"misto"
+    "José"=>"nome",
+    "Martinho"=>"misto",
+    "Silva"=>"apelido"
+  }
+
+Em que "nome", "apelido" e "misto" significam que a palavra é usada como primeiro nome, como apelido ou ambos, respectivamente.
+
+=head2 ESTRUTURA DA TAXONOMIA
+
+Uma Árvore de profundidade variável na qual as folhas são ignoradas. Apenas as chaves das hashes são usadas como entidades no reconhecimento de texto.
+
+Existem algumas chaves especiais cujas chaves (das hashes) na árvore descendente são associadas a determinados tipos de entidade:
+
+=over
+
+=item * B<'pessoa'> contém elementos textuais do tipo 'C<role>', que representam profissões ou cargos que uma pessoa possa ter;
+
+=item * B<'organização'> contém elementos textuais do tipo 'C<organization>', que representam instituições, organizações e outras entidades colectivas;
+
+=item * B<'geografia'> contém elementos textuais do tipo 'C<geography>', que representam entidades identificativas de elementos geográficos (exemplo: rio, vale, montanha);
+
+=item * B<'...'> todos os outros elementos textuais na taxonomia são de tipo desconhecido e ficam associados ao tipo 'C<other>'. Pode.
+
+=back
+
+Um exemplo real (resumido):
+
+  {
+    'pessoa' => {
+      'advogado' => 1,
+      'arquitecto' => 1,
+      'atleta' => {
+        'futebolista' => 1
+      },
+      'escritor' => {
+        'poeta' => 1
+      }
+    },
+
+    'organização' => {
+      'organização_histórica' => {
+        'dinastia' => 1,
+        'cortes' => 1
+      },
+      'comissão' => {
+        'comissão europeia' => 1
+      }
+    },
+
+    'outro' => {
+      'signo' => 1,
+      'regulamento geral de taxas' => 1
+    },
+
+    'ainda mais um' => {
+      'mosca' => 1
+    }
+  }
+
+De forma detalhada, tem-se que os elementos 'advogado', 'arquitecto', 'atleta', 'futebolista', 'escritor' e 'poeta' são do tipo 'C<role>'.
+
+Os elementos 'dinastia', 'cortes', 'comissão' e 'comissão europeia' são do tipo 'C<organization>'. Note-se que 'organização_histórica' é um elemento, mas nunca será reconhecido porque todos os '_' são removidos aquando da normalização do texto.
+
+Os elementos 'signo', 'mosca' e 'regulamento geral de taxas' são do tipo 'C<other>'. Como demonstrado, os elementos do tipo 'C<other>' não precisam de estar todos aninhados na hash correspondente a uma chave principal da Árvore (no exemplo estão nas chaves 'outro' e 'ainda mais um').
+
+As chaves principais da Árvore (no exemplo são 'pessoa', 'organização', 'outro' e 'ainda mais um') não são considerados elementos a reconhecer. Caso se queira reconhecer o texto 'pessoa' como uma entidade é preciso que esta seja adicionada aninhada na hash correspondente a uma chave principal da Árvore.
+
+Na maior parte dos casos, não há necessidade de incluir expressões duplicadas na taxonomia que apenas difiram em termos de maiúsculas e minúsculas. Ao ler os valores da taxonomia, estes são alterados de forma a que, por exemplo, o elemento 'regulamento geral de taxas' permita capturar a entidade 'Regulamento Geral de Taxas' e 'regulamento Geral de Taxas', mas não 'regulamento geral De taxas'. Para mais especificidade, consultar a descrição da subrotina L<taxonomy_to_regex|/"taxonomy_to_regex">.
+
+=head2 ESTRUTURA DE ENTIDADES RECONHECIDAS
+
+Esta estrutura vai sendo construída à medida que vão sendo lidas linhas/textos e pode ser obtida usando a subrotina L<entities|/"entities">.
+
+Segue o seguinte formato:
+
+  {
+    'entidade' => {
+      'relação' => [
+        'valor',
+        'valor',
+        (...)
+      ],
+      'outra_relação' => [
+        'valor',
+        'valor',
+        (...)
+      ]
+    },
+    'outra_entidade' => {
+      (...)
+    },
+    (...)
+  }
+
+E um exemplo de valoração:
+
+  {
+    'António Costa' => {
+      'tipo' => ['person'],
+      'alias' => ['Costa'],
+    },
+    'Costa' => {
+      'tipo' => ['person'],
+      'alias' => ['António Costa'],
+    },
+    'Banco Espírito Santo' => {
+      'tipo' => ['organization']
+    },
+    'Signo' => {
+      'tipo' => ['other']
+    }
+  }
+
+
+=head1 SUBROTINAS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
+
+=head2 EXPORT_OK
+
+=head3 normalize_line
+
+Recebe uma linha como argumento. Remove chavetas e agrupa todos os conjuntos de um ou mais caracteres de whitespace num único espaço.
+
+Esta subrotina é usada para normalizar cada linha antes de ser interpretada.
+
+=head3 get_words_from_tree
+
+Obtém todas as chaves existentes numa estrutura lógica de árvore composta por várias hashes.
+
+Exemplo: Dada a árvore
+
+  {
+    'um' => 'esta string não',
+    'três' => {
+      'quatro' => 4,
+      'cinco' => ['estas', 'strings', 'também', 'não']
+    }
+    'dois' => undef
+  }
+
+A subrotina retorna
+
+  qw(um dois três quatro cinco)
+
+=head3 taxonomy_to_regex
+
+Recebe uma taxonomia e uma ou mais chaves. Dá como resultado uma expresão regular que pode ser utilizada para capturar qualquer um dos elementos na taxonomia (sem contar com as chaves passadas como argumento).
+
+A expressão regular gerada tem algumas características fundamentais para ter maior utilidade:
+
+=over
+
+=item * É uma expressão regular com várias alternativas, como C</gigante|gelado|pneu|sol/>
+
+=item * As várias alternativas estão ordenadas por ordem decrescente de comprimento:
+
+Tendo a expressão C</filho|filhote/>, nunca é capturada a string C<filhote> porque antes disso já apanhou C<filho>.
+
+Ordenando por ordem decrescente de comprimento da string (C</filhote|filho/>) a string C<filho> só é capturada em casos em que não foi capturada a string C<filhote>.
+
+Por esta razão as várias alternativas são ordenadas antes de serem introduzidas na expressão regular.
+
+=item * As várias alternativas capturam texto em I<lower case>, em I<Title Case> e numa mistura dos dois:
+
+Um elemento como C<'presidente'> dá origem à expresão regular C</[Pp]residente/>.
+
+Um elemento como C<'regulamento geral de taxas'> dá origem à expressão regular C</[Rr]egulamento [Gg]eral de [Tt]axas/>, capturando strings como C<'Regulamento Geral de Taxas'> ou C<'regulamento Geral de Taxas'>.
+
+Especificamente, a primeira letra da string e a primeira letra de todas as palavras com 4 ou mais letras é transformada numa classe que permite a versão maiúscula e minúscula da letra.
+
+=back
+
+=head2 SUBROTINAS DE INSTÂNCIA
+
+=head3 new
+
+Cria uma nova instância de NER, com todos os elementos necessários ao reconhecimento de texto.
+
+Argumentos:
+
+=over 2
+
+=item 1. Uma L<estrutura de nomes|/"ESTRUTURA DE NOMES">
+
+=item 2. Uma L<estrutura da taxonomia|/"ESTRUTURA DA TAXONOMIA">
+
+=item 3. (opcional) Diferentes regras de re-escrita que substituiem as predefinidas
+
+Estas regras de re-escrita devem já ter sido processadas pelo módulo I<Text::RewriteRules> e devem estar em formato de string preparada para ser submetida a um I<eval>.
+
+Todas as regras definidas no C<REWRITE_RULES_BLOCK> deste módulo têm de estar definidas neste argumento.
+
+=back
+
+Neste método são criadas as expressões regulares a partir da taxonomia (usando L<taxonomy_to_regex|/"taxonomy_to_regex">) que são usadas no RewriteRules e nos Recognizers. São criadas as expressões regulares para os tipos C<'role'>, C<'organization'>, C<'geography'> e C<'other'>.
+
+É também inicializado um dicionário Jspell de Português e um novo objecto do tipo C<Recognizer>.
+
+
+=head3 recognize_file
+
+Recebe como argumento o caminho para um ficheiro.
+
+Inicia o reconhecimento de um ficheiro. Começa por abrir o ficheiro e depois delega o reconhecimento para L<recognize_file_handle|/"recognize_file_handle">.
+
+=head3 recognize_file_handle
+
+Recebe como argumento um C<FILE_HANDLE> de onde serão lidas as linhas a reconhecer.
+
+Esta subrotina só percorre todas as linhas, delegando o reconhecimento das entidades na linha para L<recognize_line|/"recognize_line">.
+
+=head3 recognize_string
+
+Recebe como argumento uma C<string> de onde serão lidas as linhas a reconhecer.
+
+Esta subrotina só percorre todas as linhas, delegando o reconhecimento das entidades na linha para L<recognize_line|/"recognize_line">.
+
+=head3 recognize_line
+
+Recebe a linha na qual devem ser reconhecidas entidades, L<normaliza-a|/"normalize_line"> e depois faz eval às RewriteRules (que originais quer redefinidas).
+
+Depois a linha é submetida a um L<processo de reconhecimento de entidades|/"rewrite_entities"> (excepto entidades do tipo C<'other'>) e é re-submetida a este processo até não serem encontradas mais entidades.
+
+Depois deste reconhecimento primário, a linha é submetida a um L<processo de reconhecimento de entidades|/"other_stuff_from_taxonomy"> do tipo C<'other'> e é re-submetida a este processo até não serem encontradas mais entidades desse tipo.
+
+Antes de finalizar o reconhecimento das entidades da linha, é feita uma tentativa de encontrar relacionamentos entre as entidades, usando L<find_relations|/"find_relations"> numa versão da linha com anotações e sem sinais de pontuação.
+
+Por fim é invocado o L<review_entities|/"review_entities"> para fazer um tratamento final aos elementos recolhidos.
+
+=head3 add_entity
+
+Recebe uma L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS"> com as noves entidades e insere-as na estrutura já existente.
+
+Este processo nunca remove informações sobre entidades já reconhecidas:
+
+=over
+
+=item * Se uma entidade não tiver ainda a nova relação, esta é adicionada com o(s) valor(es) especificado(s).
+
+=item * Se uma entidade já tiver uma relação com o mesmo valor, esse "triplo" (entidade-relação-valor) é ignorado.
+
+=item * Se uma entidade já tiver uma relação com um valor diferente, o novo valor é acrescentado à lista de valores para aquela relação.
+
+=back
+
+=head3 review_entities
+
+Esta subrotina é invocada sem argumentos e faz algumas modificações finais às entidades reconhecidas pela linha:
+
+=over
+
+* Relaciona duas entidades do tipo 'C<person>' com a relação 'C<alias>' para indicar que poderão ser a mesma pessoa.
+
+As entidades são relacionadas quando são do tipo 'C<person>' e:
+
+=over
+
+=item * terminam da mesma forma (exemplo: I<António Costa> e I<Costa>)
+
+=item * uma das entidades tem mais que 2 palavras e essas duas palavras correspondem à primeira e ultima palavra de uma entidade diferente (exemplo: I<Cláudia Monteiro de Aguiar> e I<Cláudia Aguiar>)
+
+=back
+
+=back
+
+=head3 entities
+
+Atalho que dá como resultado a L<Estrutura de Entidades Reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS"> até ao momento. A estrutura não é clonada, é propositadamente fornecido um apontador para a estrutura para que o programador a possa alterar.
+
+=head2 SUBROTINAS DE INSTÂNCIA USADAS PELO REWRITERULES
+
+=head3 create_relations
+
+Recebe um ou mais triplos (entidade, relação, valor).
+
+Percorre cada triplo e usa a subrotina L<add_entity|/"add_entity"> para adicionar novas informações à L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS">.
+
+Esta subrotina dá sempre C<false> como resultado, para que o I<Text::RewriteRules> tente aplicar sempre todas as regras antes de avançar para o carácter seguinte.
+
+=head3 recognize
+
+Recebe uma possível entidade (string) como argumento.
+
+Invoca o reconhecedor para tentar reconhecer uma entidade. Caso uma entidade seja reconhecida com 40% ou mais certezas que realmente a entidade é do tipo reconhecido, é utilizada a subrotina L<add_entity|/"add_entity"> para a adicionar à L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS">.
+
+Por fim, é definido o C<$RWTEXT> com a anotação que deverá substituir o texto original da linha. Esta anotação tem o formato C<{tipo:entidade reconhecida}>.
+
+=head3 recognize2
+
+Recebe uma possível entidade (string) como argumento.
+
+Escreve uma linha de debug e devolve o valor de chamar L<recognize|/"recognize"> no argumento recebido.
+
+=head3 is_in_taxonomy
+
+Recebe uma entidade do tipo 'C<other>' (string) como argumento.
+
+É utilizada a subrotina L<add_entity|/"add_entity"> para adicionar a entidade à L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS">.
+
+Por fim, é definido o C<$RWTEXT> com a anotação que deverá substituir o texto original da linha. Esta anotação tem o formato C<{other:entidade reconhecida}>.
+
+Não é feito qualquer tentativa de reconhecimento de entidades, pois estas são retiradas da taxonomia e a expressão regular fazer I<match> com uma string é suficiente para a reconhecer como uma entidade do tipo 'C<other>'.
+
+=head2 SUBROTINAS DO REWRITERULES
+
+No C<REWRITE_RULES_BLOCK> estão definidas algumas regras que o módulo I<Text::RewriteRules> transforma em subrotinas.
+
+=head3 C<RULES/m> rewrite_entities
+
+Recebe uma linha como argumento e reconhece entidades de todos os tipos, excepto as entidades do tipo 'C<other>'.
+
+O reconhecimento é feito percorrendo a linha do início ao fim e tentando fazer I<match> com as expressões regulares (do lado esquerdo) e, caso o L<recognize|/"recognize"> devolva um valor verdadeiro, aplicar o valor da substituição (do lado direito).
+
+=head3 C<RULES/m> other_stuff_from_taxonomy
+
+Recebe uma linha como argumento e reconhece entidades do tipo 'C<other>'.
+
+O reconhecimento é feito percorrendo a linha do início ao fim e tentando fazer I<match> com as expressões regulares (do lado esquerdo) e, caso o L<is_in_taxonomy|/"is_in_taxonomy"> devolva um valor verdadeiro, aplicar o valor da substituição (do lado direito).
+
+Caso a expressão regular faça I<match>, a substituição é sempre aplicada, pois a subrotina L<is_in_taxonomy|/"is_in_taxonomy"> devolve sempre um valor verdadeiro.
+
+=head3 C<RULES> find_relations
+
+Recebe uma linha (à qual foram retirados elementos de pontuação mas não as anotações) como argumento e reconhece relacionamentos entre entidades.
+
+O reconhecimento é feito percorrendo a linha do início ao fim, tentando fazer I<match> com as expressões regulares (do lado esquerdo) e chamando a subrotina L<create_relations|/"create_relations"> sempre que a expressão regular fizer I<match>.
+
+Alguns exemplos de tipos de relacionamentos reconhecidos:
+
+=over
+
+=item * C<role> seguido de C<person> indica que a pessoa tem esse cargo/profissão;
+
+=item * C<organization> seguido de 'da', 'de' ou 'do' e depois C<location>, indica que a organização tem uma relação com esse local;
+
+=item * C<role> seguido de 'da', 'de' ou 'do', seguido de C<organization> e depois C<person>, indica que a pessoa desempenha determinado cargo/profissão na organização;
+
+=item * C<organization> seguido de C<acronym> ou C<acronym> seguido de C<organization> indica que a organização tem esse acrónimo.
+
+=back
+
+=head1 VARIÁVEIS GLOBAIS
+
+B<$RWTEXT>: Esta variável é usada na maioria das expressões de substituição do I<Text::RewriteRules>. É definida nas subrotinas L<recognize|/"recognize"> e L<is_in_taxonomy|/"is_in_taxonomy"> para simplificar a anotação dos tipos de entidade e evitar repetição de código.
+
+=head1 REGRAS DA MAKEFILE
+
+Existem algumas regras adicionais na makefile do projecto:
+
+=over
+
+=item * C<application>: executa a aplicação de exemplo
+
+=item * C<htmlreport>: gera uma versão do relatório perldoc em HTML (com índice e hiperligações).
+
+=item * C<htmlreportclean>: remove os ficheiros gerados pela regra htmlreport
+
+=back
+
+=head1 DEPENDÊNCIAS EXTERNAS
+
+=over
+
+=item * C<Lingua::Jspell> com o dicionário Português ("port") instalado;
+
+=item * C<Text::RewriteRules>.
+
+=back
+
+=head1 === NER::Logger ===
+
+NER::Logger - Sub-módulo de output de mensagens de I<debug> usado pelo módulo NER.
+
+=head1 SINOPSE
+
+  use NER::Logger qw(TRACE);
+
+  # enables message output
+  NER::Logger::Active = 1;
+  TRACE("This text is output to STDERR");
+
+  # disables message output
+  NER::Logger::Active = 0;
+  TRACE("This text is not output to STDERR");
+
+=head1 DESCRIÇÃO
+
+Este módulo é apenas uma forma rápida de activar/desactivar mensagens de debug (basta apenas mudar a variável).
+
+=head1 SUBROTINAS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
+
+=head2 EXPORT_OK
+
+=head3 TRACE
+
+Recebe uma string (preferencialmente apenas uma linha terminada com C<\n>) como argumento e escreve-a no STDERR caso C<$Active> seja verdadeiro.
+
+=head1 VARIÁVEIS GLOBAIS
+
+B<$Active>: Se for falso, nenhum output é gerado quando se chama a subrotina L<TRACE|/"TRACE">.
+
+=head1 === NER::Recognizer ===
+
+NER::Recognizer - Sub-módulo de reconhecimento de entidades usando todos os reconhecedores conhecidos.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizer->new($names,$taxonomy,$entities);
+  my ($type, $trust, $margin) = $recognizer->recognize($possible_entity);
+
+  if( $trust > 40 && $margin > 30 ){
+    print "I'm sure it's a $type.\n";
+  }elsif($trust > 40 && $margin > 10){
+    print "It's probably a $type.\n";
+  }elsif($trust > 40){
+    print "I'm not sure, but I think it's a $type...\n";
+  }else{
+    print "I don't think that's an entity.\n";
+  }
+
+=head1 DESCRIÇÃO
+
+Este módulo usa todos os C<NER::Recognizers::*> (incluindo, de forma indirecta o C<NER::Recognizers::Base>) para tentar identificar o tipo de uma possível entidade.
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS DE INSTÂNCIA
+
+=head3 new
+
+Recebe como argumentos:
+
+=over
+
+=item 1. os L<nomes|/"ESTRUTURA-DE-NOMES">;
+
+=item 2. a L<taxonomia|/"ESTRUTURA-DA-TAXONOMIA">;
+
+=item 3. a L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS"> (preferencialmente a mesma que é usada pelo NER, para estar sempre actualizada);
+
+=item 4. o dicionário jspell a utilizar pelos reconhecedores;
+
+=item 5. uma hash com alguns valores adicionais específicos para alguns reconhecedores.
+
+=back
+
+Inicializa instâncias de todos os recognizers e passa uma referência para sí próprio ao L<NER::Recognizers::Person|/"NER::Recognizers::Person"> usando L<set_parent_recognizer|/"set_parent_recognizer">.
+
+=head3 recognize
+
+Recebe uma possível entidade.
+
+Usa todos os reconhecedores para reconhecer a entidade. Caso algum deles consiga identificar a entidade a subrotina devolve vários valores para permitir a tomada de decisão de aceitar ou não o reconhecimento.
+
+Valor de retorno:
+
+=over
+
+=item 1. O tipo reconhecido (string);
+
+=item 2. O grau de confiança do tipo reconhecido;
+
+=item 3. Margem entre o grau de confiança do tipo seleccionado e do tipo com maior grau de confiança imediatamente a seguir.
+
+=back
+
+=head1 === NER::Recognizers::Base ===
+
+NER::Recognizers::Base - Sub-módulo com partes comuns a todos os NER::Recognizers.
+
+=head1 DESCRIÇÃO
+
+Este módulo é o equivalente a uma classe abstracta de linguagens mais focadas no paradigma orientado a objectos.
+
+São definidas algumas subrotinas às quais todos os outros NER::Recognizers vão ter acesso via C<our @ISA = qw(NER::Recognizers::Base)>.
+
+Cada módulo C<NER::Recognizers::*> à excepção do C<NER::Recognizers::Base> tem obrigatoriamente definida a subrotina L<runAll|/"runAll"> e uma ou mais subrotinas para reconhecimento de características específicas do tipo de entidade tratado pelo C<NER::Recognizers::*>.
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS DE INSTÂNCIA
+
+=head3 new
+
+Recebe como argumentos:
+
+=over
+
+=item 1. os L<nomes|/"ESTRUTURA-DE-NOMES">;
+
+=item 2. a L<taxonomia|/"ESTRUTURA-DA-TAXONOMIA">;
+
+=item 3. a L<estrutura de entidades reconhecidas|/"ESTRUTURA-DE-ENTIDADES-RECONHECIDAS"> (preferencialmente a mesma que é usada pelo NER, para estar sempre actualizada);
+
+=item 4. o dicionário jspell a utilizar pelos reconhecedores;
+
+=item 5. uma hash com alguns valores adicionais específicos para alguns reconhecedores.
+
+=back
+
+E cria um novo reconhecedor que tem acesso às informações passadas nos argumentos.
+
+=head3 analyse
+
+Recebe como argumentos:
+
+=over
+
+=item 1. A expressão a reconhecer (normalizado para todas as letras serem minúsculas);
+
+=item 2. A expressão original a reconhecer (sem qualquer modificação);
+
+=back
+
+Chama a subrotina L<runAll|/"runAll"> do módulo de reconhecimento e dá como resultado a média de todos os valores diferentes de zero. O valor devolvido por esta subrotina é, para efeitos práticos, o grau de confiança com que se pode afirmar que a entidade é de um determinado tipo.
+
+=head3 set_parent_recognizer
+
+Recebe um objecto do tipo L<NER::Recognizer|/"NER::Recognizer"> como único argumento.
+
+Deve ser usado caso o reconhecedor precise de usar o L<NER::Recognizer|/"NER::Recognizer">. No estado actual apenas o L<NER::Recognizers::Person|/"NER::Recognizers::Person"> usa esta funcionalidade.
+
+=head3 re_recognize
+
+Recebe uma possível entidade que se quer tentar reconhecer.
+
+É usado caso o reconhecedor precise de usar o L<NER::Recognizer|/"NER::Recognizer">. No estado actual apenas o L<NER::Recognizers::Person|/"NER::Recognizers::Person"> usa esta subrotina.
+
+=head3 runAll
+
+Recebe como argumentos:
+
+=over
+
+=item 1. A expressão a reconhecer (normalizado para todas as letras serem minúsculas);
+
+=item 2. A expressão original a reconhecer (sem qualquer modificação);
+
+=back
+
+Executa todas as subrotinas de reconhecimento para um determinado tipo de entidade e devolve um array dos valores dados por essas subrotinas.
+
+Esta subrotina é usada de forma semelhante a um método I<abstract> em linguagens mais focadas no paradigma orientado a objectos. O módulo C<NER::Recognizers::Base> não a define, mas todos os outros C<NER::Recognizers::*> têm a sua implementação específica desta subrotina.
+
+A documentação desta subrotina foi incluída no C<NER::Recognizers::Base> por ter um funcionamento idêntico em todas as suas implementações, embora todos os C<NER::Recognizers::*> menos o C<NER::Recognizers::Base> a definam.
+
+=head1 === NER::Recognizers::Acronym ===
+
+NER::Recognizers::Acronym - Sub-módulo de reconhecimento de acrónimos.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Acronym->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<acronym>'.
+
+=head1 VARIÁVEIS GLOBAIS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
+
+=head2 EXPORT_OK
+
+=head3 REGEX_ACRONYM
+
+Expressão regular usada para capturar entidades do tipo 'C<acronym>'. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<acronym>'.
+
+=head1 SUBROTINAS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 rec_especificas
+
+Recebe a possível entidade.
+
+Devolve 90 se L<REGEX_ACRONYM|/"REGEX_ACRONYM"> fizer I<match> na string da possível entidade. Devolve 1 caso não seja possível fazer I<match>.
+
+=head1 === NER::Recognizers::Date ===
+
+NER::Recognizers::Date - Sub-módulo de reconhecimento de datas.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Date->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<date>'.
+
+=head1 VARIÁVEIS GLOBAIS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
+
+=head2 EXPORT_OK
+
+=head3 REGEX_DATE
+
+Expressão regular usada para capturar entidades do tipo 'C<date>'. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<date>'.
+
+=head3 REGEX_YEAR
+
+Expressão regular usada para capturar entidades do tipo 'C<date>', esta expressão só identifica anos. A expressão também é usada para verificar se uma possível entidade é do tipo 'C<date>'.
+
+=head1 SUBROTINAS
+
+=head2 EXPORT
+
+Nada é exportado de forma implícita/predefinida.
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 rec_especificas
+
+Recebe a possível entidade.
+
+Devolve:
+
+=over
+
+=item * 90 se L<REGEX_DATE|/"REGEX_DATE"> fizer I<match> na string da possível entidade;
+
+=item * 70 se L<REGEX_YEAR|/"REGEX_YEAR"> fizer I<match> na string da possível entidade;
+
+=item * 1 para outros casos.
+
+=back
+
+=head1 === NER::Recognizers::Geography ===
+
+NER::Recognizers::Geography - Sub-módulo de reconhecimento de elementos geográficos.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Geography->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<geography>'.
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 rec_taxonomia
+
+Recebe uma possível entidade.
+
+Se na criação da instância se tiver passado uma hash de conteúdos adicionais com uma chave 'C<RW_TAXONOMY_GEOGRAPHY_LHS>', esta é usada como uma expressão regular. Se a string fizer I<match> com a expressão regular, a subrotina devolve o valor 90, caso contrário dá o valor 0.
+
+Se não conseguir obter a expressão regular, a subrotina devolve o valor 0.
+
+A intenção é que a expressão regular seja obtida usando C<L<NER|/"NER">-E<gt>L<taxonomy_to_regex|/"taxonomy_to_regex">($taxonomy, 'geografia')>. Desta forma a expressão regular usada no C<Text::RewriteRules> para capturar possíveis entidades é a mesma que é usada no módulo para identificar entidades desse tipo.
+
+=head1 === NER::Recognizers::Location ===
+
+NER::Recognizers::Location - Sub-módulo de reconhecimento de localizações.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Location->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<location>'.
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 rec_jspell_base
+
+Recebe uma possível entidade (string).
+
+Devolve um valor com base na razão entre o número de palavras contidas na string que são identificadas como localidades pelo Jspell e o total de palavras na string.
+
+=head3 rec_especificas
+
+Recebe uma possível entidade.
+
+Devolve 80 se alguma das expressões regulares para reconhecer casos específicos fizer I<match> com a string. Caso não faça I<match> devolve 0 (valor neutro).
+
+=head1 === NER::Recognizers::Organization ===
+
+NER::Recognizers::Organization - Sub-módulo de reconhecimento de organizações e instituições.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Organization->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<organization>'.
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 rec_especificas
+
+Recebe uma possível entidade.
+
+Devolve 100 se alguma das expressões regulares para reconhecer casos específicos fizer I<match> com a string. Caso não faça I<match> devolve 0 (valor neutro).
+
+=head3 rec_taxonomia
+
+Recebe uma possível entidade.
+
+Se na criação da instância se tiver passado uma hash de conteúdos adicionais com uma chave 'C<RW_TAXONOMY_ORGANIZATION_LHS>', esta é usada como uma expressão regular. Se a string fizer I<match> com a expressão regular, a subrotina devolve o valor 90, caso contrário dá o valor 0.
+
+Se não conseguir obter a expressão regular, a subrotina devolve o valor 0.
+
+A intenção é que a expressão regular seja obtida usando C<L<NER|/"NER">-E<gt>L<taxonomy_to_regex|/"taxonomy_to_regex">($taxonomy, 'organização')>. Desta forma a expressão regular usada no C<Text::RewriteRules> para capturar possíveis entidades é a mesma que é usada no módulo para identificar entidades desse tipo.
+
+=head1 === NER::Recognizers::Person ===
+
+NER::Recognizers::Person - Sub-módulo de reconhecimento de nomes de pessoas.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Person->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<person>'.
+
+TODO: não esquecer de escrever sobre a forma como este modulo usa o re_recognize
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 palavras_individuais
+
+Recebe como argumento a possível entidade (string).
+
+Executa algumas subrotinas especializadas para obter resultados com base em palavras individuais que existam dentro da string. Todas as subrotinas são executadas para cada palavra. No fim é devolvida a média de todos os valores diferentes de 0 vindos dessas subrotinas mais especializadas.
+
+As subrotinas mais especializadas são
+L<palavras_individuais_hash_nomes|/"palavras_individuais_hash_nomes">
+L<palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro|/"palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro">
+
+=head3 fim_de_um_nome_ja_existente
+
+Recebe uma possível entidade.
+
+Devolve o valor 90 se a possível entidade corresponder ao fim de uma entidade que seja um nome de uma pessoa (porque existe a probabilidade de se estar a referir uma pessoa por um ou mais dos seus apelidos finais). E devolve 0 caso não consiga tirar conclusões.
+
+=head3 inicio_de_str_corresponde_a_algo_que_nao_nome
+
+Recebe uma possível entidade.
+
+Analisa todas as substrings que começam no início da string e são diferentes da string. Para cada uma das substrings tenta reconhecer (usando a instância do L<NER::Recognizer|/"NER::Recognizer"> definida em L<set_parent_recognizer|/"set_parent_recognizer">) algo que não seja um nome com um grau de confiança maior ou igual a 40. Caso seja reconhecida uma nova entidade, esta subrotina devolve um valor entre 1 e 20 (baixando significativamente a média de graus de confiança para o reconhecimento de um nome).
+
+Por exemplo, para "Lisboa António Costa" tem-se as substrings "Lisboa" e "Lisboa António". Ao tentar reconhecer "Lisboa", o reconhecedor identifica uma cidade com um alto grau de confiança, e por isso a subrotina devolve 1.
+
+Se nenhuma das substrings for reconhecida como algo que não seja um nome, a subrotina devolve o valor 0 (para evitar influenciar negativamente o actual grau de confiança).
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA PARA PALAVRAS INDIVIDUAIS
+
+=head3 palavras_individuais_hash_nomes
+
+Recebe uma palavra.
+
+Devolve 70 se essa palavra constar na hash de nomes. Caso contrário devolve 0.
+
+=head3 palavras_individuais_nome_de_pessoa_portugues_ou_estrangeiro
+
+Recebe uma palavra.
+
+Devolve 70 se essa palavra for identificada como nome português ou estrangeiro pelo Jspell. Caso contrário devolve 0.
+
+=head1 === NER::Recognizers::Role ===
+
+NER::Recognizers::Role - Sub-módulo de reconhecimento de profissões e cargos de pessoas.
+
+=head1 SINOPSE
+
+  my $recognizer = NER::Recognizers::Role->new($names,$taxonomy,$entities);
+  my $confidence = $recognizer->analyse($normalized_text, $original_text);
+
+=head1 DESCRIÇÃO
+
+Este módulo herda todas as subrotinas definidas no L<NER::Recognizers::Base|/"NER::Recognizers::Base">, tem uma implementação específica da subrotina L<runAll|/"runAll"> e subrotinas específicas para identificar entidades do tipo 'C<role>'.
+
+=head1 SUBROTINAS
+
+=head2 SUBROTINAS PARA OBTER O GRAU DE CONFIANÇA
+
+=head3 rec_taxonomia
+
+Recebe uma possível entidade.
+
+Se na criação da instância se tiver passado uma hash de conteúdos adicionais com uma chave 'C<RW_TAXONOMY_ROLE_LHS>', esta é usada como uma expressão regular. Se a string fizer I<match> com a expressão regular, a subrotina devolve o valor 90, caso contrário dá o valor 0.
+
+Se não conseguir obter a expressão regular, a subrotina devolve o valor 0.
+
+A intenção é que a expressão regular seja obtida usando C<L<NER|/"NER">-E<gt>L<taxonomy_to_regex|/"taxonomy_to_regex">($taxonomy, 'pessoa')>. Desta forma a expressão regular usada no C<Text::RewriteRules> para capturar possíveis entidades é a mesma que é usada no módulo para identificar entidades desse tipo.
+
+=head1 AUTORES
+
+  B. Ferreira E<lt>chalkos@chalkos.netE<gt>
+  M. Pinto E<lt>mcpinto98@gmail.comE<gt>
+
+=head1 COPYRIGHT AND LICENSE
+
+Copyright (C) 2015 by B. Ferreira and M. Pinto
+
+This program is free software; licensed under GPL.
+

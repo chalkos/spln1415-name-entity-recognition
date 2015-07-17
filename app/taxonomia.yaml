@@ -1,5 +1,6 @@
 --- #YAML:1.0
 
+# SPECIAL: pessoa is used to get people's roles
 pessoa:
    advogado: 1
    arquitecto: 1
@@ -19,10 +20,12 @@ pessoa:
       compositor: 1
       pianista: 1
    político:
+      primeiro ministro: 1
+      ministro: 1
+      presidente: 1
       presidente da república: 1
       deputado: 1
-      rei:
-         rei de portugal: 1
+      rei: 1
    religioso:
       cardeal: 1
       clérigo: 1
@@ -31,23 +34,34 @@ pessoa:
       bispo: 1
       santo: 1
 
+# SPECIAL: organização is used to get organizations
 organização:
-   organização história:
+   aeroporto:
+      aeroporto internacional: 1
+   organização_histórica:
       dinastia: 1
       cortes: 1
+   comissão:
+      comissão europeia: 1
    pessoa colectiva: 1
    agrupamento musical: 1
    clube desportivo:
       clube de futebol: 1
+   economia: 1
    empresa:
       banco: 1
    jornal: 1
    hospital: 1
    instituição:
-      instituição religiosa: 1
+      instituição religiosa:
+         igreja: 1
       instituição de solidariedade: 1
-      instituição académica: 1
-      instituição cultural: 1
+      instituição académica:
+         universidade: 1
+      instituição cultural:
+         clube: 1
+         associação: 1
+         rancho: 1
       instituição administrativa:
          câmara municipal: 1
          governo: 1
@@ -56,13 +70,14 @@ organização:
       tribunal: 1
    teatro: 1
 
-geográfica:
+# SPECIAL: geografia is used to get geography-related entities
+geografia:
    continente:
-      Europa: 1
-      Ásia: 1
-      América: 1
-      Antártida: 1
-      Oceania: 1
+      europa: 1
+      ásia: 1
+      américa: 1
+      antártida: 1
+      oceania: 1
    estado: 1
    ilha: 1
    lago: 1
@@ -84,6 +99,7 @@ geográfica:
       cidade:
          sede de distrito: 1
       concelho: 1
+      município: 1
       distrito: 1
       freguesia: 1
       lugar: 1
@@ -105,5 +121,7 @@ evento:
 
 artefacto:
    documento: 1
+
 outro:
    signo: 1
+   regulamento geral de taxas: 1
